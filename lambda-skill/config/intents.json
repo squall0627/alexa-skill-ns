@@ -1,0 +1,253 @@
+{
+  "intents": [
+    {
+      "name": "SearchProductIntent",
+      "description": "商品を検索する",
+      "handler": "SearchProductIntentHandler",
+      "slots": {
+        "ProductQuery": "検索する商品のキーワード",
+        "Brand": "ブランド名",
+        "Category": "カテゴリ名"
+      },
+      "examples": [
+        "{ProductQuery}を探して",
+        "{Brand}の商品を見せて",
+        "{ProductQuery}はありますか",
+        "{Category}を検索"
+      ]
+    },
+    {
+      "name": "BrowseCategoryIntent",
+      "description": "カテゴリごとに商品を閲覧する",
+      "handler": "BrowseCategoryIntentHandler",
+      "slots": {
+        "Category": "カテゴリ名"
+      },
+      "examples": [
+        "{Category}カテゴリを見せて",
+        "{Category}の商品一覧",
+        "{Category}のカテゴリを見たい"
+      ]
+    },
+    {
+      "name": "SelectItemIntent",
+      "description": "リストから特定の番号のアイテムを選択する",
+      "handler": "SelectItemIntentHandler",
+      "slots": {
+        "ItemIndex": "選択する商品の番号（1番目、2番目など）",
+        "Number": "番号"
+      },
+      "examples": [
+        "{ItemIndex}番目を選んで",
+        "{Number}番目のアイテム",
+        "最初の商品",
+        "{Number}つ目のやつ"
+      ]
+    },
+    {
+      "name": "AddToCartIntent",
+      "description": "商品をカートに追加する",
+      "handler": "AddToCartIntentHandler",
+      "slots": {
+        "ProductId": "商品ID",
+        "Quantity": "数量"
+      },
+      "examples": [
+        "カートに追加して",
+        "これを{Quantity}個カートに入れて",
+        "{Quantity}つカートに入れる",
+        "{ProductQuery}を{Quantity}本カートに追加"
+      ]
+    },
+    {
+      "name": "ViewCartIntent",
+      "description": "カートの中身を確認する",
+      "handler": "ViewCartIntentHandler",
+      "slots": {},
+      "examples": [
+        "カートを見せて",
+        "カートの中身は？",
+        "何が入ってる？",
+        "カート確認"
+      ]
+    },
+    {
+      "name": "RemoveFromCartIntent",
+      "description": "カートから商品を削除する",
+      "handler": "RemoveFromCartIntentHandler",
+      "slots": {
+        "ItemIndex": "削除する商品の番号",
+        "Number": "番号"
+      },
+      "examples": [
+        "{ItemIndex}番目を削除",
+        "{Number}番目をカートから消して",
+        "最初のアイテムを取り除いて"
+      ]
+    },
+    {
+      "name": "ChooseFulfillmentIntent",
+      "description": "受け取り方法を選択する（店舗受け取りor配送）",
+      "handler": "ChooseFulfillmentIntentHandler",
+      "slots": {
+        "FulfillmentMethod": "受け取り方法（店舗受け取り、配送など）"
+      },
+      "examples": [
+        "{FulfillmentMethod}で受け取りたい",
+        "{FulfillmentMethod}にして",
+        "ピックアップで",
+        "届けてほしい"
+      ]
+    },
+    {
+      "name": "CheckoutIntent",
+      "description": "注文を確定する前に確認する",
+      "handler": "CheckoutIntentHandler",
+      "slots": {},
+      "examples": [
+        "お会計",
+        "注文したい",
+        "チェックアウト",
+        "購入する"
+      ]
+    },
+    {
+      "name": "ConfirmOrderIntent",
+      "description": "注文を確定する",
+      "handler": "ConfirmOrderIntentHandler",
+      "slots": {},
+      "examples": [
+        "注文確定",
+        "注文を確認",
+        "この内容で注文"
+      ]
+    },
+    {
+      "name": "OrderStatusIntent",
+      "description": "注文状況を確認する",
+      "handler": "OrderStatusIntentHandler",
+      "slots": {},
+      "examples": [
+        "注文状況は？",
+        "注文の状態を教えて",
+        "注文はどうなってる？",
+        "オーダーステータス"
+      ]
+    },
+    {
+      "name": "CancelOrderIntent",
+      "description": "注文をキャンセルする",
+      "handler": "CancelOrderIntentHandler",
+      "slots": {},
+      "examples": [
+        "注文をキャンセルして",
+        "注文取り消し",
+        "やっぱりやめる"
+      ]
+    },
+    {
+      "name": "ApplyCouponIntent",
+      "description": "クーポンを適用する",
+      "handler": "ApplyCouponIntentHandler",
+      "slots": {
+        "CouponCode": "クーポンコード"
+      },
+      "examples": [
+        "クーポンを使いたい",
+        "{CouponCode}を適用して",
+        "クーポンコード{CouponCode}を使う"
+      ]
+    },
+    {
+      "name": "PromotionsIntent",
+      "description": "現在利用可能なプロモーションやキャンペーンを確認する",
+      "handler": "PromotionsIntentHandler",
+      "slots": {},
+      "examples": [
+        "キャンペーンは？",
+        "プロモーション情報",
+        "何かお得なことある？",
+        "割引はありますか"
+      ]
+    },
+    {
+      "name": "AMAZON.NextIntent",
+      "description": "次のページを表示する",
+      "handler": "AMAZON.NextIntent",
+      "slots": {},
+      "examples": [
+        "次",
+        "次のページ",
+        "もっと見せて"
+      ]
+    },
+    {
+      "name": "AMAZON.PreviousIntent",
+      "description": "前のページを表示する",
+      "handler": "AMAZON.PreviousIntent",
+      "slots": {},
+      "examples": [
+        "前",
+        "前のページ",
+        "戻って"
+      ]
+    },
+    {
+      "name": "AMAZON.YesIntent",
+      "description": "はいと答える",
+      "handler": "AMAZON.YesIntent",
+      "slots": {},
+      "examples": [
+        "はい",
+        "そうです",
+        "お願いします",
+        "OK"
+      ]
+    },
+    {
+      "name": "AMAZON.NoIntent",
+      "description": "いいえと答える",
+      "handler": "AMAZON.NoIntent",
+      "slots": {},
+      "examples": [
+        "いいえ",
+        "違います",
+        "結構です",
+        "やめておきます"
+      ]
+    },
+    {
+      "name": "AMAZON.HelpIntent",
+      "description": "ヘルプ情報を表示する",
+      "handler": "AMAZON.HelpIntent",
+      "slots": {},
+      "examples": [
+        "ヘルプ",
+        "使い方を教えて",
+        "何ができますか"
+      ]
+    },
+    {
+      "name": "AMAZON.StopIntent",
+      "description": "スキルを終了する",
+      "handler": "AMAZON.StopIntent",
+      "slots": {},
+      "examples": [
+        "終了",
+        "ストップ",
+        "やめる"
+      ]
+    },
+    {
+      "name": "AMAZON.CancelIntent",
+      "description": "キャンセルする",
+      "handler": "AMAZON.CancelIntent",
+      "slots": {},
+      "examples": [
+        "キャンセル",
+        "やめる",
+        "取り消し"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "alexa-skill-ns",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "ask-sdk-core": "^2.13.0",
+    "node-fetch": "^2.6.7",
+    "aws-sdk": "^2.1370.0"
+  }
+}
