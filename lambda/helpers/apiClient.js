@@ -4,6 +4,13 @@
 // - 環境変数 BACKEND_API_BASE が設定されていればそれを優先します。
 // - セッション属性は往復で維持します。
 
+// Load .env file in local development
+try {
+  require('dotenv').config();
+} catch (_e) {
+  // dotenv not available (OK in production Lambda)
+}
+
 const fetch = (...args) => import('node-fetch').then(module => module.default(...args));
 
 const LLM_BACKEND_URL = process.env.LLM_BACKEND_URL || '';
