@@ -24,6 +24,29 @@
           ]
         },
         {
+          "name": "SearchProductIntent",
+          "slots": [
+            {
+              "name": "ProductQuery",
+              "type": "AMAZON.Food"
+            },
+            {
+              "name": "Brand",
+              "type": "AMAZON.Food"
+            },
+            {
+              "name": "Category",
+              "type": "AMAZON.Food"
+            }
+          ],
+          "samples": [
+            "{Category} を検索して",
+            "{ProductQuery} はありますか",
+            "{Brand} の商品を見せて",
+            "{ProductQuery} を探して"
+          ]
+        },
+        {
           "name": "AMAZON.NavigateHomeIntent",
           "samples": []
         }

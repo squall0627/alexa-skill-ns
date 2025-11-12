@@ -20,12 +20,31 @@ module.exports = {
     const sessionAttributes = attributesManager.getSessionAttributes() || {};
 
     try {
+      // ログ: ハンドラ開始、セッションと slot の中身を出力
+      console.log('SearchProductIntent invoked', {
+        sessionId,
+        locale: requestEnvelope.request.locale,
+        slots,
+        sessionAttributesPreview: Object.keys(sessionAttributes).length
+      });
+
+      // API に投げる前のペイロードを簡潔にログ出力
+      console.log('SearchProductIntent request payload:', JSON.stringify({ sessionId, slots, userText: requestEnvelope.request.inputTranscript || '', sessionAttributes: sessionAttributes }, null, 2));
+
       const apiResp = await postJson('/search/products', {
         sessionId,
         slots,
         userText: requestEnvelope.request.inputTranscript || '',
         sessionAttributes,
       });
+
+      // ログ: API レスポンス要約
+      console.log('SearchProductIntent API response:', JSON.stringify({
+        spokenResponse: apiResp.spokenResponse,
+        reprompt: apiResp.reprompt,
+        shouldEndSession: apiResp.shouldEndSession,
+        sessionAttributesKeys: apiResp.sessionAttributes ? Object.keys(apiResp.sessionAttributes) : []
+      }, null, 2));
 
       // 日本語：セッション属性を更新
       if (apiResp.sessionAttributes && typeof apiResp.sessionAttributes === 'object') {
