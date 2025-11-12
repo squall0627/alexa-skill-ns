@@ -4,7 +4,7 @@
 // - 環境変数 BACKEND_API_BASE が設定されていればそれを優先します。
 // - セッション属性は往復で維持します。
 
-const fetch = require('node-fetch');
+const fetch = (...args) => import('node-fetch').then(module => module.default(...args));
 
 const LLM_BACKEND_URL = process.env.LLM_BACKEND_URL || '';
 const BACKEND_API_BASE = process.env.BACKEND_API_BASE || '';
@@ -42,6 +42,7 @@ function toUserError(message) {
 
 // POST ヘルパー（JSON I/O）
 async function postJson(path, payload) {
+  console.log('API POST', path, payload);
   if (!API_BASE) throw new Error('API base URL is未設定');
   const url = `${API_BASE}${path}`;
   const resp = await fetch(url, {
@@ -53,11 +54,13 @@ async function postJson(path, payload) {
     body: JSON.stringify(payload || {}),
   });
   if (!resp.ok) {
+    console.error('API error', resp.status, await resp.text().catch(()=> ''));
     const text = await resp.text().catch(()=> '');
     const err = new Error(`API error ${resp.status}: ${text}`);
     err.status = resp.status;
     throw err;
   }
+  console.log('API response result:', resp.status);
   return resp.json();
 }
 
