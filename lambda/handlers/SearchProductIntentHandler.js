@@ -1,7 +1,7 @@
 // handlers/SearchProductIntentHandler.js
 // 日本語：商品検索 Intent（SearchProductIntent）専用ハンドラ。
 const Alexa = require('ask-sdk-core');
-const { postJson, toUserError } = require('../helpers/apiClient');
+const SearchProductService = require('../services/SearchProductService');
 
 module.exports = {
   canHandle(handlerInput) {
@@ -10,7 +10,7 @@ module.exports = {
     return Alexa.getRequestType(request) === 'IntentRequest' && Alexa.getIntentName(request) === 'SearchProductIntent';
   },
   async handle(handlerInput) {
-    // 日本語：スロットとセッション属性を収集して API へ委譲
+    // 日本語：スロットとセッション属性を収集してサービスに委譲
     const requestEnvelope = handlerInput.requestEnvelope;
     const intent = requestEnvelope.request.intent || { slots: {} };
     const slots = intent.slots ? Object.fromEntries(Object.entries(intent.slots).map(([k, v]) => [k, v && v.value])) : {};
@@ -28,40 +28,47 @@ module.exports = {
         sessionAttributesPreview: Object.keys(sessionAttributes).length
       });
 
-      // API に投げる前のペイロードを簡潔にログ出力
-      console.log('SearchProductIntent request payload:', JSON.stringify({ sessionId, slots, userText: requestEnvelope.request.inputTranscript || '', sessionAttributes: sessionAttributes }, null, 2));
+      // 日本語：スロット値の整理
+      const searchFilters = {
+        productQuery: slots.ProductQuery || undefined,
+        brand: slots.Brand || undefined,
+        category: slots.Category || undefined,
+        limit: 5,
+        offset: sessionAttributes.currentPage ? (sessionAttributes.currentPage - 1) * 5 : 0,
+      };
 
-      const apiResp = await postJson('/search/products', {
-        sessionId,
-        slots,
-        userText: requestEnvelope.request.inputTranscript || '',
-        sessionAttributes,
-      });
+      console.log('SearchProductIntent search filters:', JSON.stringify(searchFilters, null, 2));
 
-      // ログ: API レスポンス要約
-      console.log('SearchProductIntent API response:', JSON.stringify({
-        spokenResponse: apiResp.spokenResponse,
-        reprompt: apiResp.reprompt,
-        shouldEndSession: apiResp.shouldEndSession,
-        sessionAttributesKeys: apiResp.sessionAttributes ? Object.keys(apiResp.sessionAttributes) : []
+      // 日本語：SearchProductService を呼び出してサービス側の検索ロジックを実行
+      const serviceResp = SearchProductService.search(searchFilters);
+
+      // ログ: サービス レスポンス要約
+      console.log('SearchProductIntent service response:', JSON.stringify({
+        spokenResponse: serviceResp.spokenResponse,
+        reprompt: serviceResp.reprompt,
+        shouldEndSession: serviceResp.shouldEndSession,
+        productsCount: serviceResp.products ? serviceResp.products.length : 0,
+        paginationInfo: serviceResp.pagination,
+        sessionAttributesKeys: serviceResp.sessionAttributes ? Object.keys(serviceResp.sessionAttributes) : []
       }, null, 2));
 
       // 日本語：セッション属性を更新
-      if (apiResp.sessionAttributes && typeof apiResp.sessionAttributes === 'object') {
-        attributesManager.setSessionAttributes(apiResp.sessionAttributes);
+      if (serviceResp.sessionAttributes && typeof serviceResp.sessionAttributes === 'object') {
+        attributesManager.setSessionAttributes(serviceResp.sessionAttributes);
       }
 
-      const speech = apiResp.spokenResponse || '該当商品が見つかりませんでした。何を検索しますか？';
-      const reprompt = apiResp.reprompt || '続けますか？';
-      const shouldEnd = apiResp.shouldEndSession === true;
+      const speech = serviceResp.spokenResponse || '該当商品が見つかりませんでした。何を検索しますか？';
+      const reprompt = serviceResp.reprompt || '続けますか？';
+      const shouldEnd = serviceResp.shouldEndSession === true;
 
       const builder = handlerInput.responseBuilder.speak(speech);
       if (!shouldEnd) builder.reprompt(reprompt); else builder.withShouldEndSession(true);
       return builder.getResponse();
     } catch (e) {
-      console.error('SearchProductIntent API error:', e);
-      const err = toUserError();
-      return handlerInput.responseBuilder.speak(err.spokenResponse).reprompt(err.reprompt).getResponse();
+      console.error('SearchProductIntent service error:', e);
+      const spokenResponse = '申し訳ありません。現在リクエストを処理できません。少し時間をおいてもう一度お試しください。';
+      const reprompt = '恐れ入りますが、もう一度お願いします。';
+      return handlerInput.responseBuilder.speak(spokenResponse).reprompt(reprompt).getResponse();
     }
   }
 };
