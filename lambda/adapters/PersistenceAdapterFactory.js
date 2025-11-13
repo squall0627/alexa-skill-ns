@@ -8,18 +8,33 @@ const LocalPersistenceAdapter = require('./LocalPersistenceAdapter');
 
 function getPersistenceAdapter() {
     const env = process.env.NODE_ENV || 'local';
-    console.log(`[PersistenceAdapterFactory] Using ${env} persistence adapter`);
+    const isLambda = process.env.AWS_LAMBDA_FUNCTION_NAME !== undefined;
     
-    if (env === 'production' || env === 'lambda') {
-        // 生产环境使用 DynamoDB
+    console.log(`[PersistenceAdapterFactory] Environment: ${env}, IsLambda: ${isLambda}`);
+    
+    // 优先级:
+    // 1. 如果指定了 NODE_ENV=production，使用 DynamoDB
+    // 2. 如果运行在 Lambda 环境且没有明确设置为 local，优先使用 DynamoDB
+    // 3. 否则使用本地适配器 (本地开发或 Lambda 模拟器)
+    
+    if (env === 'production') {
+        console.log('[PersistenceAdapterFactory] Using DynamoDB adapter (production)');
         return new DynamoDbPersistenceAdapter({
             tableName: 'AlexaSkillsKit.Sessions',
             createTable: true
         });
-    } else {
-        // 本地开发使用文件系统
-        return new LocalPersistenceAdapter();
     }
+    
+    if (isLambda && env !== 'local' && env !== 'development') {
+        console.log('[PersistenceAdapterFactory] Using DynamoDB adapter (Lambda detected)');
+        return new DynamoDbPersistenceAdapter({
+            tableName: 'AlexaSkillsKit.Sessions',
+            createTable: true
+        });
+    }
+    
+    console.log('[PersistenceAdapterFactory] Using Local adapter (local development or Lambda simulator)');
+    return new LocalPersistenceAdapter();
 }
 
 module.exports = {
