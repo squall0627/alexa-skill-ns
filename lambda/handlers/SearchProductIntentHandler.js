@@ -33,8 +33,8 @@ module.exports = {
         productQuery: slots.ProductQuery || undefined,
         brand: slots.Brand || undefined,
         category: slots.Category || undefined,
-        limit: 5,
-        offset: sessionAttributes.currentPage ? (sessionAttributes.currentPage - 1) * 5 : 0,
+        limit: 3,
+        offset: sessionAttributes.currentPage ? (sessionAttributes.currentPage - 1) * 3 : 0,
       };
 
       console.log('SearchProductIntent search filters:', JSON.stringify(searchFilters, null, 2));
