@@ -170,7 +170,8 @@ class SearchProductService {
       paginatedResults,
       { productQuery, brand, category },
       currentPage,
-      totalPages
+      totalPages,
+      limit
     );
 
     // レスポンスオブジェクト
@@ -201,7 +202,7 @@ class SearchProductService {
    * 検索結果から日本語の音声応答を生成
    * @private
    */
-  _generateSpokenResponse(results, filters, currentPage, totalPages) {
+  _generateSpokenResponse(results, filters, currentPage, totalPages, limit) {
     const { productQuery, brand, category } = filters;
 
     if (results.length === 0) {
@@ -220,24 +221,18 @@ class SearchProductService {
     }
 
     // 検索結果がある場合
-    // 音声用に先頭 limit 件を番号付きで生成（1-based index）
-    const topResults = results.slice(0, limit);
-    const productStrings = topResults
+    // results は既に paginatedResults（slice済み）なので、そのまま使用
+    const productStrings = results
       .map((p, i) => `番号${i + 1}、${p.name}、価格は${p.price}円`)
       .join('。 ');
-
-    const pageInfo =
-      totalPages > 1
-        ? `（全${totalPages}ページ中${currentPage}ページ目。 `
-        : '';
 
     const condition = productQuery || brand || category ? '検索結果：' : '';
 
     // 商品を提示した後、ユーザーに番号で選んでもらうプロンプトを追加
-    const askForSelection = topResults.length > 0 ? 'どの商品をカートに入れますか？ 番号で教えてください。' : '';
+    const askForSelection = results.length > 0 ? 'どの商品をカートに入れますか？ 番号で教えてください。' : '';
 
     return `${condition}${productStrings}${
-      totalPages > 1 ? `。 次のページもありますか？` : ''
+      results.length > 0 && totalPages > 1 ? `。 次のページもありますか？` : ''
     } ${askForSelection}`.trim();
   }
 
