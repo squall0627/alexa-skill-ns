@@ -6,6 +6,8 @@
 const Alexa = require('ask-sdk-core');
 
 const SearchProductIntentHandler = require('./handlers/SearchProductIntentHandler');
+const AddCartIntentHandler = require('./handlers/AddCartIntentHandler');
+const AfterAddDecisionHandler = require('./handlers/AfterAddDecisionHandler');
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
@@ -151,8 +153,10 @@ exports.handler = Alexa.SkillBuilders.custom()
         CancelAndStopIntentHandler,
         FallbackIntentHandler,
         SessionEndedRequestHandler,
-        SearchProductIntentHandler,
-        IntentReflectorHandler)
+    SearchProductIntentHandler,
+    AddCartIntentHandler,
+    AfterAddDecisionHandler,
+    IntentReflectorHandler)
     .addErrorHandlers(
         ErrorHandler)
     .withCustomUserAgent('sample/hello-world/v1.2')

@@ -114,7 +114,7 @@ class SearchProductService {
    * @returns {Object} 検索結果とセッション情報
    */
   search(filters = {}) {
-    const { productQuery, brand, category, limit = 5, offset = 0 } = filters;
+    const { productQuery, brand, category, limit = 3, offset = 0 } = filters;
 
     console.log(`[SearchProductService] search() called with:`, {
       productQuery,
@@ -220,9 +220,10 @@ class SearchProductService {
     }
 
     // 検索結果がある場合
-    const productStrings = results
-      .slice(0, 3) // 最初の3つまで
-      .map((p) => `${p.name}、価格は${p.price}円`)
+    // 音声用に先頭 limit 件を番号付きで生成（1-based index）
+    const topResults = results.slice(0, limit);
+    const productStrings = topResults
+      .map((p, i) => `番号${i + 1}、${p.name}、価格は${p.price}円`)
       .join('。 ');
 
     const pageInfo =
@@ -232,9 +233,12 @@ class SearchProductService {
 
     const condition = productQuery || brand || category ? '検索結果：' : '';
 
+    // 商品を提示した後、ユーザーに番号で選んでもらうプロンプトを追加
+    const askForSelection = topResults.length > 0 ? 'どの商品をカートに入れますか？ 番号で教えてください。' : '';
+
     return `${condition}${productStrings}${
       totalPages > 1 ? `。 次のページもありますか？` : ''
-    }`;
+    } ${askForSelection}`.trim();
   }
 
   /**

@@ -40,10 +40,25 @@
             }
           ],
           "samples": [
-            "{Category} を検索して",
+            "{Category} を検索",
             "{ProductQuery} はありますか",
             "{Brand} の商品を見せて",
             "{ProductQuery} を探して"
+          ]
+        },
+        {
+          "name": "AddCartIntent",
+          "slots": [
+            {
+              "name": "ItemNumber",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "{ItemNumber} 番を入れて",
+            "{ItemNumber} 番",
+            "{ItemNumber} をカートに入れて",
+            "{ItemNumber} を追加して"
           ]
         },
         {
