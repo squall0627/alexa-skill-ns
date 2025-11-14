@@ -26,3 +26,11 @@ assert(cd.cart && cd.cart.length === 1, 'cart length must be 1');
 
 console.log('Light tests passed');
 
+// Run NumberOnlyIntentHandler tests
+try {
+  const runNumberOnlyTests = require('./NumberOnlyIntentHandler.test.js');
+  runNumberOnlyTests();
+} catch (err) {
+  console.error('NumberOnlyIntentHandler tests failed:', err);
+  process.exit(1);
+}

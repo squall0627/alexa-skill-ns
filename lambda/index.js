@@ -21,6 +21,7 @@ const SelectDeliverySlotIntentHandler = require('./handlers/SelectDeliverySlotIn
 const SearchAvailablePromotionIntentHandler = require('./handlers/SearchAvailablePromotionIntentHandler');
 const SelectPromotionIntentHandler = require('./handlers/SelectPromotionIntentHandler');
 const StopOrderHandler = require('./handlers/StopOrderHandler');
+const NumberOnlyIntentHandler = require('./handlers/NumberOnlyIntentHandler');
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
@@ -241,6 +242,7 @@ exports.handler = Alexa.SkillBuilders.custom()
         SearchAvailablePromotionIntentHandler,
         SelectPromotionIntentHandler,
         StopOrderHandler,
+        NumberOnlyIntentHandler,
         IntentReflectorHandler)
     .addRequestInterceptors(LoadCartInterceptor)
     .addResponseInterceptors(SaveCartInterceptor)

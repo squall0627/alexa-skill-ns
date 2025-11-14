@@ -5,7 +5,8 @@ const Alexa = require('ask-sdk-core');
 module.exports = {
   canHandle(handlerInput) {
     const request = handlerInput.requestEnvelope;
-    return Alexa.getRequestType(request) === 'IntentRequest' && Alexa.getIntentName(request) === 'AddCartIntent';
+    const sessionAttributes = handlerInput.attributesManager.getSessionAttributes() || {};
+    return Alexa.getRequestType(request) === 'IntentRequest' && Alexa.getIntentName(request) === 'AddCartIntent' && sessionAttributes.lastAction === 'SearchProductIntent';
   },
   handle(handlerInput) {
     const requestEnvelope = handlerInput.requestEnvelope;

@@ -54,23 +54,32 @@
             "{ItemNumber} 番 {Quantity} 個",
             "{ItemNumber} を {Quantity} 個 カートに入れて",
             "{ItemNumber} を 追加して",
-            "{ItemNumber} 番 を 入れて",
-            "{ItemNumber} 番"
+            "{ItemNumber} 番 を 入れて"
           ]
         },
         {
-          "name": "ProvideAddQuantityIntent",
+          "name": "NumberOnlyIntent",
           "slots": [
-            {
-              "name": "Quantity",
-              "type": "AMAZON.NUMBER"
-            }
+            { "name": "Number", "type": "AMAZON.NUMBER" }
           ],
           "samples": [
-            "{Quantity} 個",
+            "{Number}",
+            "{Number} 番",
+            "{Number} をお願いします",
+            "{Number} 番でお願いします",
+            "{Number} 個",
             "{Quantity} 個ください",
             "{Quantity} 個お願いします",
-            "{Quantity} つ"
+            "{Number} つ",
+            "{Number} 番目",
+            "{Number} つ目",
+            "{Number} 番で",
+            "一つ目",
+            "二つ目",
+            "三つ目",
+            "一番目",
+            "二番目",
+            "{Number} つ目でお願いします"
           ]
         },
         {
@@ -103,20 +112,6 @@
           ]
         },
         {
-          "name": "ProvideDeleteQuantityIntent",
-          "slots": [
-            {
-              "name": "Quantity",
-              "type": "AMAZON.NUMBER"
-            }
-          ],
-          "samples": [
-            "{Quantity} 個削除",
-            "{Quantity} 個",
-            "{Quantity} 個お願いします"
-          ]
-        },
-        {
           "name": "ClearCartIntent",
           "slots": [],
           "samples": [
@@ -143,25 +138,10 @@
             }
           ],
           "samples": [
-            "配達枠を見せて",
+            "配送便を見せて",
             "配達時間を選びたい",
-            "{Date} の配達枠はありますか",
+            "{Date} の配送便はありますか",
             "{Date} の {Time} に届けてほしい"
-          ]
-        },
-        {
-          "name": "SelectDeliverySlotIntent",
-          "slots": [
-            {
-              "name": "SlotNumber",
-              "type": "AMAZON.NUMBER"
-            }
-          ],
-          "samples": [
-            "{SlotNumber} 番を選ぶ",
-            "{SlotNumber} 番でお願いします",
-            "一つ目の枠を選びます",
-            "{SlotNumber} 番の枠をお願いします"
           ]
         },
         {
@@ -175,24 +155,11 @@
           ]
         },
         {
-          "name": "SelectPromotionIntent",
-          "slots": [
-            {
-              "name": "PromoNumber",
-              "type": "AMAZON.NUMBER"
-            }
-          ],
-          "samples": [
-            "{PromoNumber} 番を使う",
-            "番号 {PromoNumber} を使って",
-            "{PromoNumber} 番のクーポンを適用して",
-            "一番目のクーポンを使う"
-          ]
-        },
-        {
           "name": "StopOrderIntent",
           "slots": [],
           "samples": [
+            "購入中止",
+            "注文中止",
             "今回の購入を中止して",
             "この注文の処理を中止します",
             "購入を中止したい"

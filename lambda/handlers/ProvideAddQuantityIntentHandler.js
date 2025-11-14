@@ -5,7 +5,7 @@ const Alexa = require('ask-sdk-core');
 module.exports = {
   canHandle(handlerInput) {
     const request = handlerInput.requestEnvelope;
-      const sessionAttributes = handlerInput.attributesManager.getSessionAttributes() || {};
+    const sessionAttributes = handlerInput.attributesManager.getSessionAttributes() || {};
     // Only handle ProvideQuantity when a generic pending flag is set and the lastAction was AddCartIntent
     if (!sessionAttributes.pending || sessionAttributes.lastAction !== 'AddCartIntent') {
       return false;
