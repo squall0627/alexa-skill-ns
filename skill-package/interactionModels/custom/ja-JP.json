@@ -63,6 +63,40 @@
         {
           "name": "AMAZON.NoIntent",
           "samples": []
+        },
+        {
+          "name": "SelectDeliverySlotIntent",
+          "slots": [
+            {
+              "name": "Date",
+              "type": "AMAZON.DATE"
+            },
+            {
+              "name": "Time",
+              "type": "AMAZON.TIME"
+            }
+          ],
+          "samples": [
+            "配達枠を見せて",
+            "配達時間を選びたい",
+            "{Date} の配達枠はありますか",
+            "{Date} の {Time} に届けてほしい"
+          ]
+        },
+        {
+          "name": "ChooseDeliverySlotIntent",
+          "slots": [
+            {
+              "name": "SlotNumber",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "{SlotNumber} 番を選ぶ",
+            "{SlotNumber} 番でお願いします",
+            "一つ目の枠を選びます",
+            "{SlotNumber} 番の枠をお願いします"
+          ]
         }
       ],
       "types": [],

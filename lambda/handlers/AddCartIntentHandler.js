@@ -53,6 +53,8 @@ module.exports = {
     sessionAttributes.cart = cart;
     sessionAttributes.lastAction = 'afterAdd';
     sessionAttributes.lastAdded = product;
+    // マークを立ててインターセプターに保存させる
+    sessionAttributes._cartDirty = true;
 
     // 一度だけ更新を保存
     attributesManager.setSessionAttributes(sessionAttributes);

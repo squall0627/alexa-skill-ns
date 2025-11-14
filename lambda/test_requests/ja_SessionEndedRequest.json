@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "session": {
+    "new": false,
+    "sessionId": "SessionId.ended",
+    "application": {
+      "applicationId": "amzn1.ask.skill.f34d39e6-c813-4131-a1d7-12687b457215"
+    },
+    "attributes": {}
+  },
+  "context": {
+    "System": {
+      "application": {
+        "applicationId": "amzn1.ask.skill.f34d39e6-c813-4131-a1d7-12687b457215"
+      }
+    }
+  },
+  "request": {
+    "type": "SessionEndedRequest",
+    "requestId": "EdwRequestId.Ended",
+    "locale": "ja-JP",
+    "timestamp": "2025-11-12T00:00:00Z",
+    "reason": "USER_INITIATED"
+  }
+}

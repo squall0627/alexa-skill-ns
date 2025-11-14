@@ -248,6 +248,35 @@
         "やめる",
         "取り消し"
       ]
+    },
+    {
+      "name": "SelectDeliverySlotIntent",
+      "description": "配送の配達枠を提示する（日時や時間帯の指定可）",
+      "handler": "SelectDeliverySlotIntentHandler",
+      "slots": {
+        "Date": "配達希望日（YYYY-MM-DD）",
+        "Time": "希望時間帯（例: 10:00-11:00）"
+      },
+      "examples": [
+        "配達枠を見せて",
+        "今日の配達枠は",
+        "明日の10時の枠を教えて",
+        "配達時間を選びたい"
+      ]
+    },
+    {
+      "name": "ChooseDeliverySlotIntent",
+      "description": "提示された配送枠の中から番号で選択する",
+      "handler": "ChooseDeliverySlotIntentHandler",
+      "slots": {
+        "SlotNumber": "提示された配送枠の番号（1,2,3など）"
+      },
+      "examples": [
+        "1番を選ぶ",
+        "2番でお願いします",
+        "一つ目の枠を選びます",
+        "2番の枠をお願いします"
+      ]
     }
   ]
 }

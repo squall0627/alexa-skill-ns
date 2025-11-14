@@ -5,10 +5,13 @@
  * */
 const Alexa = require('ask-sdk-core');
 const { getPersistenceAdapter } = require('./adapters/PersistenceAdapterFactory');
+const CartPersistenceHelper = require('./utils/CartPersistenceHelper');
 
 const SearchProductIntentHandler = require('./handlers/SearchProductIntentHandler');
 const AddCartIntentHandler = require('./handlers/AddCartIntentHandler');
 const AfterAddDecisionHandler = require('./handlers/AfterAddDecisionHandler');
+const SelectDeliverySlotIntentHandler = require('./handlers/SelectDeliverySlotIntentHandler');
+const ChooseDeliverySlotIntentHandler = require('./handlers/ChooseDeliverySlotIntentHandler');
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
@@ -142,18 +145,20 @@ const LoadCartInterceptor = {
             const attributesManager = handlerInput.attributesManager;
             const persistentAttributes = await attributesManager.getPersistentAttributes() || {};
             const sessionAttributes = attributesManager.getSessionAttributes() || {};
-            
-            // 如果持久化存储中有购物车数据，加载到 session 中
-            if (persistentAttributes.cart && persistentAttributes.cart.length > 0) {
-                sessionAttributes.cart = persistentAttributes.cart;
-                console.log(`[LoadCartInterceptor] Loaded cart with ${persistentAttributes.cart.length} items`);
+
+            // 只从 unified cartData 加载
+            const cartData = persistentAttributes.cartData || null;
+            if (cartData) {
+                sessionAttributes.cart = Array.isArray(cartData.cart) ? cartData.cart : [];
+                if (cartData.cartDelivery) sessionAttributes.cartDelivery = cartData.cartDelivery;
+                console.log('[LoadCartInterceptor] Loaded cartData');
             }
-            
-            // 也加载其他重要的持久化属性
+
+            // orderHistory 仍然单独加载
             if (persistentAttributes.orderHistory) {
                 sessionAttributes.orderHistory = persistentAttributes.orderHistory;
             }
-            
+
             attributesManager.setSessionAttributes(sessionAttributes);
         } catch (error) {
             console.log(`[LoadCartInterceptor] Error loading persistent attributes: ${error}`);
@@ -167,32 +172,34 @@ const LoadCartInterceptor = {
  */
 const SaveCartInterceptor = {
     async process(handlerInput) {
-        console.log('[SaveCartInterceptor] Saving cart data to persistent storage...');
+        console.log('[SaveCartInterceptor] Checking whether to save cartData...');
         try {
             const attributesManager = handlerInput.attributesManager;
             const sessionAttributes = attributesManager.getSessionAttributes() || {};
             const persistentAttributes = await attributesManager.getPersistentAttributes() || {};
-            
-            // 保存购物车数据到持久化存储
-            if (sessionAttributes.cart && sessionAttributes.cart.length > 0) {
-                persistentAttributes.cart = sessionAttributes.cart;
-                console.log(`[SaveCartInterceptor] Saved cart with ${sessionAttributes.cart.length} items`);
+
+            // 只有在必要时才写入（脏标记或内容变化）
+            const existingCartData = persistentAttributes.cartData || null;
+            if (CartPersistenceHelper.shouldSave(sessionAttributes, existingCartData)) {
+                const newCartData = CartPersistenceHelper.buildCartData(sessionAttributes);
+                persistentAttributes.cartData = newCartData;
+                // other persistent fields
+                if (sessionAttributes.lastSearchResults) persistentAttributes.lastSearchResults = sessionAttributes.lastSearchResults;
+                if (sessionAttributes.lastSearchQuery) persistentAttributes.lastSearchQuery = sessionAttributes.lastSearchQuery;
+                persistentAttributes.lastUpdate = new Date().toISOString();
+
+                attributesManager.setPersistentAttributes(persistentAttributes);
+                await attributesManager.savePersistentAttributes();
+                console.log('[SaveCartInterceptor] cartData persisted');
+
+                // 清除脏标记
+                if (sessionAttributes._cartDirty) {
+                    delete sessionAttributes._cartDirty;
+                    attributesManager.setSessionAttributes(sessionAttributes);
+                }
+            } else {
+                console.log('[SaveCartInterceptor] No changes detected, skipping save');
             }
-            
-            // 保存其他会话数据（但不保存临时状态如 lastAction 和 lastAdded）
-            if (sessionAttributes.lastSearchResults) {
-                persistentAttributes.lastSearchResults = sessionAttributes.lastSearchResults;
-            }
-            if (sessionAttributes.lastSearchQuery) {
-                persistentAttributes.lastSearchQuery = sessionAttributes.lastSearchQuery;
-            }
-            
-            // 设置时间戳用于追踪
-            persistentAttributes.lastUpdate = new Date().toISOString();
-            
-            attributesManager.setPersistentAttributes(persistentAttributes);
-            await attributesManager.savePersistentAttributes();
-            console.log('[SaveCartInterceptor] Persistent data saved successfully');
         } catch (error) {
             console.log(`[SaveCartInterceptor] Error saving persistent attributes: ${error}`);
         }
@@ -211,12 +218,21 @@ const ClearCartHandler = {
         console.log('[ClearCartHandler] Cancelling order and clearing cart...');
         const attributesManager = handlerInput.attributesManager;
         const persistentAttributes = await attributesManager.getPersistentAttributes() || {};
-        
-        // 清空购物车
-        delete persistentAttributes.cart;
-        attributesManager.setPersistentAttributes(persistentAttributes);
-        await attributesManager.savePersistentAttributes();
-        
+        const sessionAttributes = attributesManager.getSessionAttributes() || {};
+
+        // 清空持久化的购物车和已选配送枠（使用 unified cartData）
+        if (persistentAttributes.cartData) {
+            delete persistentAttributes.cartData;
+            console.log('[ClearCartHandler] Removed persistent cartData');
+        }
+         attributesManager.setPersistentAttributes(persistentAttributes);
+         await attributesManager.savePersistentAttributes();
+
+         // 同步清空当前会话中的购物车和已选配送枠
+         delete sessionAttributes.cart;
+         delete sessionAttributes.cartDelivery;
+         attributesManager.setSessionAttributes(sessionAttributes);
+
         const speakOutput = 'ご注文をキャンセルしました。またのご利用をお待ちしております。';
         return handlerInput.responseBuilder
             .speak(speakOutput)
@@ -239,6 +255,8 @@ exports.handler = Alexa.SkillBuilders.custom()
         SearchProductIntentHandler,
         AddCartIntentHandler,
         AfterAddDecisionHandler,
+        SelectDeliverySlotIntentHandler,
+        ChooseDeliverySlotIntentHandler,
         ClearCartHandler,
         IntentReflectorHandler)
     .addRequestInterceptors(LoadCartInterceptor)
