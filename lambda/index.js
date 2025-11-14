@@ -9,9 +9,16 @@ const CartPersistenceHelper = require('./utils/CartPersistenceHelper');
 
 const SearchProductIntentHandler = require('./handlers/SearchProductIntentHandler');
 const AddCartIntentHandler = require('./handlers/AddCartIntentHandler');
+const ProvideQuantityIntentHandler = require('./handlers/ProvideQuantityIntentHandler');
+const DeleteCartIntentHandler = require('./handlers/DeleteCartIntentHandler');
+const ProvideDeleteQuantityIntentHandler = require('./handlers/ProvideDeleteQuantityIntentHandler');
+const ViewCartIntentHandler = require('./handlers/ViewCartIntentHandler');
+const ClearCartIntentHandler = require('./handlers/ClearCartIntentHandler');
+const PendingConfirmationHandler = require('./handlers/PendingConfirmationHandler');
 const AfterAddDecisionHandler = require('./handlers/AfterAddDecisionHandler');
 const SelectDeliverySlotIntentHandler = require('./handlers/SelectDeliverySlotIntentHandler');
 const ChooseDeliverySlotIntentHandler = require('./handlers/ChooseDeliverySlotIntentHandler');
+const StopOrderHandler = require('./handlers/StopOrderHandler');
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
@@ -207,40 +214,6 @@ const SaveCartInterceptor = {
 };
 
 /**
- * 当用户开始新订单或取消订单时，清空购物车的处理
- */
-const ClearCartHandler = {
-    canHandle(handlerInput) {
-        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
-            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AMAZON.CancelIntent';
-    },
-    async handle(handlerInput) {
-        console.log('[ClearCartHandler] Cancelling order and clearing cart...');
-        const attributesManager = handlerInput.attributesManager;
-        const persistentAttributes = await attributesManager.getPersistentAttributes() || {};
-        const sessionAttributes = attributesManager.getSessionAttributes() || {};
-
-        // 清空持久化的购物车和已选配送枠（使用 unified cartData）
-        if (persistentAttributes.cartData) {
-            delete persistentAttributes.cartData;
-            console.log('[ClearCartHandler] Removed persistent cartData');
-        }
-         attributesManager.setPersistentAttributes(persistentAttributes);
-         await attributesManager.savePersistentAttributes();
-
-         // 同步清空当前会话中的购物车和已选配送枠
-         delete sessionAttributes.cart;
-         delete sessionAttributes.cartDelivery;
-         attributesManager.setSessionAttributes(sessionAttributes);
-
-        const speakOutput = 'ご注文をキャンセルしました。またのご利用をお待ちしております。';
-        return handlerInput.responseBuilder
-            .speak(speakOutput)
-            .getResponse();
-    }
-};
-
-/**
  * This handler acts as the entry point for your skill, routing all request and response
  * payloads to the handlers above. Make sure any new handlers or interceptors you've
  * defined are included below. The order matters - they're processed top to bottom 
@@ -254,10 +227,16 @@ exports.handler = Alexa.SkillBuilders.custom()
         SessionEndedRequestHandler,
         SearchProductIntentHandler,
         AddCartIntentHandler,
+        ProvideQuantityIntentHandler,
+        DeleteCartIntentHandler,
+        ProvideDeleteQuantityIntentHandler,
+        ViewCartIntentHandler,
+        ClearCartIntentHandler,
+        PendingConfirmationHandler,
         AfterAddDecisionHandler,
         SelectDeliverySlotIntentHandler,
         ChooseDeliverySlotIntentHandler,
-        ClearCartHandler,
+        StopOrderHandler,
         IntentReflectorHandler)
     .addRequestInterceptors(LoadCartInterceptor)
     .addResponseInterceptors(SaveCartInterceptor)

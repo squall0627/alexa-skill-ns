@@ -24,12 +24,16 @@ module.exports = {
     const lastResults = sessionAttributes.lastSearchResults || [];
 
     // スロット名: ItemNumber
-    const itemNumberSlot = slots.ItemNumber && (slots.ItemNumber.value || slots.ItemNumber.resolutions && slots.ItemNumber.resolutions.resolutionsPerAuthority && slots.ItemNumber.resolutions.resolutionsPerAuthority[0] && slots.ItemNumber.resolutions.resolutionsPerAuthority[0].values && slots.ItemNumber.resolutions.resolutionsPerAuthority[0].values[0] && slots.ItemNumber.resolutions.resolutionsPerAuthority[0].values[0].value.name);
-
+    const itemNumberSlot = slots.ItemNumber && (slots.ItemNumber.value || (slots.ItemNumber.resolutions && slots.ItemNumber.resolutions.resolutionsPerAuthority && slots.ItemNumber.resolutions.resolutionsPerAuthority[0] && slots.ItemNumber.resolutions.resolutionsPerAuthority[0].values && slots.ItemNumber.resolutions.resolutionsPerAuthority[0].values[0] && slots.ItemNumber.resolutions.resolutionsPerAuthority[0].values[0].value && slots.ItemNumber.resolutions.resolutionsPerAuthority[0].values[0].value.name));
     const rawNumber = itemNumberSlot || (slots.ItemNumber && slots.ItemNumber.value);
     const index = rawNumber ? parseInt(rawNumber, 10) : NaN;
 
-    console.log(`[AddCartIntent] Parsed ItemNumber slot: value=${rawNumber}, index=${index}`);
+    // スロット: Quantity（口語的表現にも寛容に対応）
+    const parseQuantity = require('../utils/parseQuantity').parseSpokenQuantity;
+    const rawQty = (slots.Quantity && (slots.Quantity.value || (slots.Quantity.resolutions && slots.Quantity.resolutions.resolutionsPerAuthority && slots.Quantity.resolutions.resolutionsPerAuthority[0] && slots.Quantity.resolutions.resolutionsPerAuthority[0].values && slots.Quantity.resolutions.resolutionsPerAuthority[0].values[0] && slots.Quantity.resolutions.resolutionsPerAuthority[0].values[0].value && slots.Quantity.resolutions.resolutionsPerAuthority[0].values[0].value.name))) || (slots.Quantity && slots.Quantity.value);
+    const quantity = parseQuantity(rawQty);
+
+    console.log(`[AddCartIntent] Parsed ItemNumber slot: value=${rawNumber}, index=${index}, Quantity=${rawQty}`);
 
     // ユーザーフレンドリーな応答（日本語）
     if (!lastResults || lastResults.length === 0) {
@@ -47,24 +51,34 @@ module.exports = {
     const product = lastResults[index - 1];
     console.log(`[AddCartIntent] Selected product:`, { id: product.id, name: product.name });
 
-    // カートをセッション属性に保存
-    const cart = sessionAttributes.cart || [];
-    cart.push(product);
-    sessionAttributes.cart = cart;
-    sessionAttributes.lastAction = 'afterAdd';
-    sessionAttributes.lastAdded = product;
-    // マークを立ててインターセプターに保存させる
-    sessionAttributes._cartDirty = true;
+    // 如果用户提供了数量，则直接加入购物车
+    if (!Number.isNaN(quantity) && quantity >= 1) {
+      const cart = sessionAttributes.cart || [];
+      const cartUtils = require('../utils/cartUtils');
+      const { cart: newCart, item, totalQuantity } = cartUtils.addOrMergeCartItem(cart, product, quantity);
+      sessionAttributes.cart = newCart;
+      sessionAttributes.lastAdded = item;
+      sessionAttributes.lastAction = 'afterAdd';
+      sessionAttributes._cartDirty = true;
 
-    // 一度だけ更新を保存
+      attributesManager.setSessionAttributes(sessionAttributes);
+      console.log(`[AddCartIntent] Session attributes updated:`, { cartSize: newCart.length, lastAction: sessionAttributes.lastAction });
+
+      const shortInfo = `${product.name}、メーカー：${product.brand}、価格：${product.price}円`;
+      const speak = `${shortInfo} を ${quantity} 個追加しました。合計で ${totalQuantity} 個になりました。現在カートには ${newCart.length} 件の商品があります。続けて別の商品を検索しますか？`;
+      const reprompt = '続けて検索しますか？はいで続ける、いいえでカートを確認します。';
+      return handlerInput.responseBuilder.speak(speak).reprompt(reprompt).getResponse();
+    }
+
+    // 用户没有提供数量：保存 pendingAdd 并向用户询问数量
+    sessionAttributes.pendingAdd = {
+      index: index,
+      product: product
+    };
     attributesManager.setSessionAttributes(sessionAttributes);
-    console.log(`[AddCartIntent] Session attributes updated:`, { cartSize: cart.length, lastAction: sessionAttributes.lastAction });
 
-    // より自然な音声応答：商品名・ブランド・価格を読み上げ、次の選択肢を提示
-    const shortInfo = `${product.name}、メーカー：${product.brand}、価格：${product.price}円`;
-    const speak = `${shortInfo} をカートに追加しました。現在カートには ${cart.length} 件の商品があります。続けて別の商品を検索しますか？はいで続ける、いいえでカートを確認できます。`; 
-    const reprompt = '続けて検索しますか？はいで続ける、いいえでカートを確認します。';
-
+    const speak = `${product.name} を何個カートに入れますか？`;
+    const reprompt = '個数を教えてください。例えば、2個、3個のようにお答えください。';
     return handlerInput.responseBuilder.speak(speak).reprompt(reprompt).getResponse();
   }
 };

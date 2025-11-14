@@ -1,0 +1,103 @@
+[
+  {
+    "id": 1,
+    "name": "トマト",
+    "brand": "JA農協",
+    "category": "野菜",
+    "description": "新鮮な国産トマト。ビタミンC豊富。",
+    "price": 200,
+    "promoPrice": 150,
+    "availability": true
+  },
+  {
+    "id": 2,
+    "name": "ミニトマト",
+    "brand": "JA農協",
+    "category": "野菜",
+    "description": "甘いミニトマト。サラダに最適。",
+    "price": 150,
+    "promoPrice": null,
+    "availability": true
+  },
+  {
+    "id": 3,
+    "name": "りんご",
+    "brand": "ふじリンゴ農園",
+    "category": "果物",
+    "description": "甘くて脆いふじリンゴ。",
+    "price": 300,
+    "promoPrice": 250,
+    "availability": true
+  },
+  {
+    "id": 4,
+    "name": "みかん",
+    "brand": "みかん農家組合",
+    "category": "果物",
+    "description": "ビタミンCたっぷりのみかん。",
+    "price": 250,
+    "promoPrice": null,
+    "availability": true
+  },
+  {
+    "id": 5,
+    "name": "ぶどう",
+    "brand": "ぶどう農園",
+    "category": "果物",
+    "description": "シャインマスカット。甘くて大粒。",
+    "price": 800,
+    "promoPrice": 700,
+    "availability": true
+  },
+  {
+    "id": 6,
+    "name": "レタス",
+    "brand": "JA農協",
+    "category": "野菜",
+    "description": "シャキシャキのレタス。",
+    "price": 180,
+    "promoPrice": null,
+    "availability": true
+  },
+  {
+    "id": 7,
+    "name": "キャベツ",
+    "brand": "JA農協",
+    "category": "野菜",
+    "description": "甘いキャベツ。お鍋や炒め物に。",
+    "price": 150,
+    "promoPrice": null,
+    "availability": true
+  },
+  {
+    "id": 8,
+    "name": "にんじん",
+    "brand": "JA農協",
+    "category": "野菜",
+    "description": "甘い国産人参。",
+    "price": 100,
+    "promoPrice": null,
+    "availability": true
+  },
+  {
+    "id": 9,
+    "name": "バナナ",
+    "brand": "フィリピン産",
+    "category": "果物",
+    "description": "黄色く熟したバナナ。栄養豊富。",
+    "price": 120,
+    "promoPrice": 99,
+    "availability": true
+  },
+  {
+    "id": 10,
+    "name": "いちご",
+    "brand": "いちご農園",
+    "category": "果物",
+    "description": "あまおう。甘くて大粒。",
+    "price": 600,
+    "promoPrice": null,
+    "availability": true
+  }
+]
+

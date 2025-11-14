@@ -43,26 +43,20 @@
             {
               "name": "ItemNumber",
               "type": "AMAZON.NUMBER"
+            },
+            {
+              "name": "Quantity",
+              "type": "AMAZON.NUMBER"
             }
           ],
           "samples": [
+            "{ItemNumber} 番を{Quantity}個入れて",
+            "{ItemNumber} 番 {Quantity} 個",
+            "{ItemNumber} を{Quantity}個カートに入れて",
+            "{ItemNumber} を追加して",
             "{ItemNumber} 番を入れて",
-            "{ItemNumber} 番",
-            "{ItemNumber} をカートに入れて",
-            "{ItemNumber} を追加して"
+            "{ItemNumber} 番"
           ]
-        },
-        {
-          "name": "AMAZON.NavigateHomeIntent",
-          "samples": []
-        },
-        {
-          "name": "AMAZON.YesIntent",
-          "samples": []
-        },
-        {
-          "name": "AMAZON.NoIntent",
-          "samples": []
         },
         {
           "name": "SelectDeliverySlotIntent",
@@ -97,10 +91,152 @@
             "一つ目の枠を選びます",
             "{SlotNumber} 番の枠をお願いします"
           ]
+        },
+        {
+          "name": "ApplyPromotionIntent",
+          "slots": [],
+          "samples": [
+            "利用できるクーポンを教えて",
+            "クーポンを使えるか確認して",
+            "使えるクーポンはありますか",
+            "クーポンを確認して"
+          ]
+        },
+        {
+          "name": "ProvideQuantityIntent",
+          "slots": [
+            {
+              "name": "Quantity",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "{Quantity} 個",
+            "{Quantity} 個ください",
+            "{Quantity} 個お願いします",
+            "{Quantity} つ"
+          ]
+        },
+        {
+          "name": "DeleteCartIntent",
+          "slots": [
+            {
+              "name": "ItemNumber",
+              "type": "AMAZON.NUMBER"
+            },
+            {
+              "name": "Quantity",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "{ItemNumber} 番を削除して",
+            "{ItemNumber} 番を{Quantity}個削除して",
+            "{ItemNumber} をカートから削除して",
+            "{ItemNumber} を全部削除して"
+          ]
+        },
+        {
+          "name": "ViewCartIntent",
+          "slots": [],
+          "samples": [
+            "カートを見せて",
+            "カートの中身を教えて",
+            "カートを確認して",
+            "入っている商品を教えて"
+          ]
+        },
+        {
+          "name": "ClearCartIntent",
+          "slots": [],
+          "samples": [
+            "カートを空にして",
+            "カートをクリアして",
+            "カートの中身を全部消して",
+            "カートを削除して"
+          ],
+          "confirmationRequired": true,
+          "prompts": {
+            "confirmation": "CONFIRM_CLEAR_CART"
+          }
+        },
+        {
+          "name": "StopOrderIntent",
+          "slots": [],
+          "samples": [
+            "今回の購入を中止して",
+            "この注文の処理を中止します",
+            "購入を中止したい"
+          ],
+          "confirmationRequired": true,
+          "prompts": {
+            "confirmation": "CONFIRM_STOP_ORDER"
+          }
+        },
+        {
+          "name": "ProvideDeleteQuantityIntent",
+          "slots": [
+            {
+              "name": "Quantity",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "{Quantity} 個削除",
+            "{Quantity} 個",
+            "{Quantity} 個お願いします"
+          ]
+        },
+        {
+          "name": "SelectPromotionIntent",
+          "slots": [
+            {
+              "name": "PromoNumber",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "{PromoNumber} 番を使う",
+            "番号 {PromoNumber} を使って",
+            "{PromoNumber} 番のクーポンを適用して",
+            "一番目のクーポンを使う"
+          ]
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.YesIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NoIntent",
+          "samples": []
         }
       ],
       "types": [],
       "invocationName": "イオンネットスーパー"
-    }
+    },
+    "prompts": [
+      {
+        "id": "CONFIRM_CLEAR_CART",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "カートの中身を全部消してもよろしいですか？"
+          }
+        ]
+      },
+      {
+        "id": "CONFIRM_STOP_ORDER",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "今回のご購入を中止してもよろしいですか？"
+          }
+        ]
+      }
+    ]
   }
 }

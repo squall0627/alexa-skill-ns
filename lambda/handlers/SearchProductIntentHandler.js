@@ -40,7 +40,7 @@ module.exports = {
       console.log('SearchProductIntent search filters:', JSON.stringify(searchFilters, null, 2));
 
       // 日本語：SearchProductService を呼び出してサービス側の検索ロジックを実行
-      const serviceResp = SearchProductService.search(searchFilters);
+      const serviceResp = await SearchProductService.search(searchFilters);
 
       // ログ: サービス レスポンス要約
       console.log('SearchProductIntent service response:', JSON.stringify({

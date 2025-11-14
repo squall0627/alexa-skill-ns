@@ -1,0 +1,21 @@
+[
+  {
+    "promoId": "P1001",
+    "name": "初回購入割引",
+    "orderThreshold": 1000,
+    "discountAmount": 200
+  },
+  {
+    "promoId": "P1002",
+    "name": "季節のフルーツセール",
+    "orderThreshold": 500,
+    "discountAmount": 50
+  },
+  {
+    "promoId": "P1003",
+    "name": "まとめ買い割",
+    "orderThreshold": 1500,
+    "discountAmount": 300
+  }
+]
+

@@ -1,102 +1,8 @@
 // services/SearchProductService.js
 // 日本語: 商品検索サービス - 検索ロジックと仮の商品データベース
 
-/**
- * 仮商品データベース
- * 実際の商品情報（名前、ブランド、カテゴリ、説明など）
- */
-const PRODUCTS_DATABASE = [
-  {
-    id: 1,
-    name: 'トマト',
-    brand: 'JA農協',
-    category: '野菜',
-    description: '新鮮な国産トマト。ビタミンC豊富。',
-    price: 200,
-    availability: true,
-  },
-  {
-    id: 2,
-    name: 'ミニトマト',
-    brand: 'JA農協',
-    category: '野菜',
-    description: '甘いミニトマト。サラダに最適。',
-    price: 150,
-    availability: true,
-  },
-  {
-    id: 3,
-    name: 'りんご',
-    brand: 'ふじリンゴ農園',
-    category: '果物',
-    description: '甘くて脆いふじリンゴ。',
-    price: 300,
-    availability: true,
-  },
-  {
-    id: 4,
-    name: 'みかん',
-    brand: 'みかん農家組合',
-    category: '果物',
-    description: 'ビタミンCたっぷりのみかん。',
-    price: 250,
-    availability: true,
-  },
-  {
-    id: 5,
-    name: 'ぶどう',
-    brand: 'ぶどう農園',
-    category: '果物',
-    description: 'シャインマスカット。甘くて大粒。',
-    price: 800,
-    availability: true,
-  },
-  {
-    id: 6,
-    name: 'レタス',
-    brand: 'JA農協',
-    category: '野菜',
-    description: 'シャキシャキのレタス。',
-    price: 180,
-    availability: true,
-  },
-  {
-    id: 7,
-    name: 'キャベツ',
-    brand: 'JA農協',
-    category: '野菜',
-    description: '甘いキャベツ。お鍋や炒め物に。',
-    price: 150,
-    availability: true,
-  },
-  {
-    id: 8,
-    name: 'にんじん',
-    brand: 'JA農協',
-    category: '野菜',
-    description: '甘い国産人参。',
-    price: 100,
-    availability: true,
-  },
-  {
-    id: 9,
-    name: 'バナナ',
-    brand: 'フィリピン産',
-    category: '果物',
-    description: '黄色く熟したバナナ。栄養豊富。',
-    price: 120,
-    availability: true,
-  },
-  {
-    id: 10,
-    name: 'いちご',
-    brand: 'いちご農園',
-    category: '果物',
-    description: 'あまおう。甘くて大粒。',
-    price: 600,
-    availability: true,
-  },
-];
+const TableHandler = require('../tables/TableHandler');
+const productsTable = new TableHandler('products');
 
 /**
  * 商品検索サービス
@@ -113,7 +19,7 @@ class SearchProductService {
    * @param {number} filters.offset - オフセット（ページネーション）
    * @returns {Object} 検索結果とセッション情報
    */
-  search(filters = {}) {
+  async search(filters = {}) {
     const { productQuery, brand, category, limit = 3, offset = 0 } = filters;
 
     console.log(`[SearchProductService] search() called with:`, {
@@ -125,7 +31,8 @@ class SearchProductService {
     });
 
     // フィルタリングロジック
-    let results = PRODUCTS_DATABASE.filter((product) => {
+    const allProducts = await productsTable.readAll();
+    let results = allProducts.filter((product) => {
       // ProductQuery（商品名）による検索（大文字小文字を区別しない、部分一致）
       if (productQuery && productQuery.trim()) {
         const query = productQuery.toLowerCase();
@@ -176,24 +83,24 @@ class SearchProductService {
 
     // レスポンスオブジェクト
     const response = {
-      spokenResponse,
-      reprompt: 'ほかに検索したいことはありますか？',
-      shouldEndSession: false,
-      products: paginatedResults,
-      pagination: {
-        total,
-        limit,
-        offset,
-        currentPage,
-        totalPages,
-        hasNext: offset + limit < total,
-      },
-      sessionAttributes: {
-        lastSearchQuery: { productQuery, brand, category },
-        lastSearchResults: paginatedResults,
-        currentPage,
-      },
-    };
+       spokenResponse,
+       reprompt: 'ほかに検索したいことはありますか？',
+       shouldEndSession: false,
+       products: paginatedResults,
+       pagination: {
+         total,
+         limit,
+         offset,
+         currentPage,
+         totalPages,
+         hasNext: offset + limit < total,
+       },
+       sessionAttributes: {
+         lastSearchQuery: { productQuery, brand, category },
+         lastSearchResults: paginatedResults,
+         currentPage,
+       },
+     };
 
     return response;
   }
@@ -223,7 +130,14 @@ class SearchProductService {
     // 検索結果がある場合
     // results は既に paginatedResults（slice済み）なので、そのまま使用
     const productStrings = results
-      .map((p, i) => `番号${i + 1}、${p.name}、価格は${p.price}円`)
+      .map((p, i) => {
+        const base = `番号${i + 1}、${p.name}、価格は${p.price}円`;
+        if (p.promoPrice && p.promoPrice < p.price) {
+          // セールを強調
+          return `${base}、現在セール中！特別価格は${p.promoPrice}円です。おすすめです。`;
+        }
+        return base;
+      })
       .join('。 ');
 
     const condition = productQuery || brand || category ? '検索結果：' : '';
@@ -240,8 +154,9 @@ class SearchProductService {
    * 全カテゴリーの一覧を取得
    * @returns {Array} カテゴリー名の配列
    */
-  getCategories() {
-    const categories = [...new Set(PRODUCTS_DATABASE.map((p) => p.category))];
+  async getCategories() {
+    const allProducts = await productsTable.readAll();
+    const categories = [...new Set(allProducts.map((p) => p.category))];
     return categories;
   }
 
@@ -249,8 +164,9 @@ class SearchProductService {
    * 全ブランドの一覧を取得
    * @returns {Array} ブランド名の配列
    */
-  getBrands() {
-    const brands = [...new Set(PRODUCTS_DATABASE.map((p) => p.brand))];
+  async getBrands() {
+    const allProducts = await productsTable.readAll();
+    const brands = [...new Set(allProducts.map((p) => p.brand))];
     return brands;
   }
 }
