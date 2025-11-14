@@ -1,61 +1,47 @@
-// filepath: /Users/squall/develop/Alexa-skill-ns/lambda/handlers/SelectDeliverySlotIntentHandler.js
-// handlers/SelectDeliverySlotIntentHandler.js
-// 日本語：配送車次（配達スロット）選択用 Intent ハンドラ
+// lambda/handlers/SelectDeliverySlotIntentHandler.js
+// This is the renamed version of the former ChooseDeliverySlotIntentHandler, now named SelectDeliverySlotIntentHandler
 const Alexa = require('ask-sdk-core');
-const DeliverySlotService = require('../services/DeliverySlotService');
 
 module.exports = {
   canHandle(handlerInput) {
     const request = handlerInput.requestEnvelope;
-    return Alexa.getRequestType(request) === 'IntentRequest' && Alexa.getIntentName(request) === 'SelectDeliverySlotIntent';
+    const intentName = Alexa.getIntentName(request);
+    const sessionAttributes = handlerInput.attributesManager.getSessionAttributes() || {};
+    return Alexa.getRequestType(request) === 'IntentRequest' && intentName === 'SelectDeliverySlotIntent' && sessionAttributes.lastAction === 'SearchAvailableDeliverySlotIntent';
   },
-
   async handle(handlerInput) {
     const requestEnvelope = handlerInput.requestEnvelope;
     const intent = requestEnvelope.request.intent || { slots: {} };
-    const slots = intent.slots ? Object.fromEntries(Object.entries(intent.slots).map(([k, v]) => [k, v && v.value])) : {};
+    const slots = intent.slots || {};
+    const slotNumberValue = slots.SlotNumber && (slots.SlotNumber.value || (slots.SlotNumber.resolutions && slots.SlotNumber.resolutions.resolutionsPerAuthority && slots.SlotNumber.resolutions.resolutionsPerAuthority[0] && slots.SlotNumber.resolutions.resolutionsPerAuthority[0].values && slots.SlotNumber.resolutions.resolutionsPerAuthority[0].values[0] && slots.SlotNumber.resolutions.resolutionsPerAuthority[0].values[0].value.name));
 
     const attributesManager = handlerInput.attributesManager;
     const sessionAttributes = attributesManager.getSessionAttributes() || {};
 
-    try {
-      // カートの存在チェック
-      const cart = sessionAttributes.cart || [];
-      if (!cart || cart.length === 0) {
-        const speak = 'カートに商品が入っていません。先に商品を選んでください。どの商品を探しますか？';
-        return handlerInput.responseBuilder.speak(speak).reprompt('どの商品を探しますか？').getResponse();
-      }
+    const available = sessionAttributes.availableDeliverySlots || [];
 
-      // ユーザーが日付／時間を指定した場合はそれを使う
-      const date = slots.Date || undefined; // 期待される形式: YYYY-MM-DD
-      const time = slots.Time || undefined; // 期待される形式: HH:MM あるいは "10:00-11:00"
-
-      console.log('[SelectDeliverySlotIntent] Handling with slots:', { date, time });
-
-      // サービス呼び出し
-      const available = DeliverySlotService.getAvailableSlots({ date, time, limit: 3 });
-
-      if (!available || available.length === 0) {
-        const speak = '申し訳ありません。指定された条件で利用可能な配送枠が見つかりませんでした。別の日付や時間を指定するか、条件を変更してください。';
-        return handlerInput.responseBuilder.speak(speak).reprompt('別の日付や時間を指定しますか？').getResponse();
-      }
-
-      // セッションに候補を保存しておく（後でユーザーが番号選択することを想定）
-      sessionAttributes.availableDeliverySlots = available;
-      sessionAttributes.lastAction = 'selectDeliverySlot';
-      attributesManager.setSessionAttributes(sessionAttributes);
-
-      // 読み上げ文を作成（最大3件）
-      const listSpeech = available.map((s, i) => `番号${i + 1}、${s.spokenLabel}`).join('。 ');
-      const speak = `利用可能な配送枠を提示します。${listSpeech}。どの枠を選びますか？ 番号で教えてください。`;
-      const reprompt = 'どの配送枠を選びますか？ 番号で教えてください。';
-
-      return handlerInput.responseBuilder.speak(speak).reprompt(reprompt).getResponse();
-    } catch (error) {
-      console.error('[SelectDeliverySlotIntent] Error:', error);
-      const speak = '申し訳ありません。配送枠の取得中にエラーが発生しました。もう一度お試しください。';
-      return handlerInput.responseBuilder.speak(speak).reprompt('もう一度お試しください。').getResponse();
+    if (!available || available.length === 0) {
+      const speak = '申し訳ありません。利用可能な配送枠の候補が見つかりません。もう一度配達枠を表示しますか？';
+      return handlerInput.responseBuilder.speak(speak).reprompt('配達枠を表示しますか？').getResponse();
     }
+
+    const index = slotNumberValue ? parseInt(slotNumberValue, 10) : NaN;
+    if (Number.isNaN(index) || index < 1 || index > available.length) {
+      const speak = `申し訳ありません。番号は1から${available.length}の間で教えてください。どの枠を選びますか？`;
+      return handlerInput.responseBuilder.speak(speak).reprompt('番号で教えてください。').getResponse();
+    }
+
+    const selected = available[index - 1];
+
+    sessionAttributes.cart = sessionAttributes.cart || [];
+    sessionAttributes.cartDelivery = selected;
+
+    delete sessionAttributes.availableDeliverySlots;
+    sessionAttributes._cartDirty = true;
+    attributesManager.setSessionAttributes(sessionAttributes);
+
+    const speak = `配送枠を選択しました。${selected.spokenLabel} を選択しました。お支払いに進みますか、それとも他に追加しますか？`;
+    return handlerInput.responseBuilder.speak(speak).reprompt('お支払いに進みますか？').getResponse();
   }
 };
 

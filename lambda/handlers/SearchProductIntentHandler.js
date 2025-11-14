@@ -2,6 +2,7 @@
 // 日本語：商品検索 Intent（SearchProductIntent）専用ハンドラ。
 const Alexa = require('ask-sdk-core');
 const SearchProductService = require('../services/SearchProductService');
+const { markLastAction } = require('../utils/sessionUtils');
 
 module.exports = {
   canHandle(handlerInput) {
@@ -18,6 +19,8 @@ module.exports = {
     const sessionId = requestEnvelope.session ? requestEnvelope.session.sessionId : 'unknown';
     const attributesManager = handlerInput.attributesManager;
     const sessionAttributes = attributesManager.getSessionAttributes() || {};
+    // mark last action as this intent via helper
+    markLastAction(handlerInput, 'SearchProductIntent');
 
     try {
       // ログ: ハンドラ開始、セッションと slot の中身を出力

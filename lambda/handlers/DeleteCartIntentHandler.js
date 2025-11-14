@@ -14,6 +14,9 @@ module.exports = {
 
     const attributesManager = handlerInput.attributesManager;
     const sessionAttributes = attributesManager.getSessionAttributes() || {};
+    const { markLastAction } = require('../utils/sessionUtils');
+    // mark last action as this intent
+    markLastAction(handlerInput, 'DeleteCartIntent');
 
     const cart = sessionAttributes.cart || [];
     if (!cart || cart.length === 0) {
@@ -46,8 +49,9 @@ module.exports = {
 
     // 如果未提供数量，则询问用户要删除多少
     if (Number.isNaN(quantity)) {
-      // 保存 pendingDelete
-      sessionAttributes.pendingDelete = { index, productId: product.id };
+      // 保存通用 pending 标志与数据，lastAction 为当前 Intent 名称（DeleteCartIntent）
+      sessionAttributes.pending = true;
+      sessionAttributes.pendingData = { kind: 'deleteQuantity', index, productId: product.id };
       attributesManager.setSessionAttributes(sessionAttributes);
       const speak = `${product.name} を何個削除しますか？ 全部削除する場合は「全部」と言ってください。`;
       const reprompt = '削除する個数を教えてください。例えば、1個、全部、のように答えてください。';
@@ -56,9 +60,8 @@ module.exports = {
 
     // 有数量，执行删除或减少
     const cartUtils = require('../utils/cartUtils');
-    const { cart: newCart, removedItem, remainingQuantity, removedCompletely } = cartUtils.removeOrReduceCartItem(cart, product.id, quantity);
+    const { cart: newCart, remainingQuantity, removedCompletely } = cartUtils.removeOrReduceCartItem(cart, product.id, quantity);
     sessionAttributes.cart = newCart;
-    sessionAttributes.lastAction = 'afterDelete';
     sessionAttributes._cartDirty = true;
     attributesManager.setSessionAttributes(sessionAttributes);
 

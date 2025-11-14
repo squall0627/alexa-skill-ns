@@ -1,18 +1,22 @@
-// lambda/handlers/ApplyPromotionIntentHandler.js
-// 日本語：プロモーション（クーポン）を提示・適用する Intent ハンドラ
+// lambda/handlers/SearchAvailablePromotionIntentHandler.js
+// 日本語：プロモーション（クーポン）を提示・適用する Intent ハンドラ（原 ApplyPromotionIntentHandler）
 
 const Alexa = require('ask-sdk-core');
 const CheckoutService = require('../services/CheckoutService');
-const PromotionService = require('../services/PromotionService');
+// PromotionService not used here
 
 module.exports = {
   canHandle(handlerInput) {
+    const attributesManager = handlerInput.attributesManager;
     const request = handlerInput.requestEnvelope;
-    return Alexa.getRequestType(request) === 'IntentRequest' && Alexa.getIntentName(request) === 'ApplyPromotionIntent';
+    return Alexa.getRequestType(request) === 'IntentRequest' && Alexa.getIntentName(request) === 'SearchAvailablePromotionIntent';
   },
   async handle(handlerInput) {
     const attributesManager = handlerInput.attributesManager;
     const sessionAttributes = attributesManager.getSessionAttributes() || {};
+    const { markLastAction } = require('../utils/sessionUtils');
+    // mark last action as this intent
+    markLastAction(handlerInput, 'SearchAvailablePromotionIntent');
 
     const cart = sessionAttributes.cart || [];
     if (!cart || cart.length === 0) {
@@ -56,3 +60,4 @@ module.exports = {
     return handlerInput.responseBuilder.speak(spoken).reprompt('どのクーポンを利用しますか？').getResponse();
   }
 };
+

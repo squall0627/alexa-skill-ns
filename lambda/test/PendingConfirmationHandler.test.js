@@ -31,41 +31,45 @@ function makeHandlerInput({ intentName = 'AMAZON.YesIntent', sessionAttrs = {}, 
 
 describe('PendingConfirmationHandler', () => {
   test('pendingClearCart + Yes clears cart', async () => {
-    const handlerInput = makeHandlerInput({ intentName: 'AMAZON.YesIntent', sessionAttrs: { pendingClearCart: true, cart: [{ id:1 }] } });
+    const handlerInput = makeHandlerInput({ intentName: 'AMAZON.YesIntent', sessionAttrs: { pending: true, pendingData: { kind: 'clearCart' }, cart: [{ id:1 }] } });
     const res = await PendingConfirmationHandler.handle(handlerInput);
     const after = handlerInput.attributesManager.getSessionAttributes();
     expect(after.cart).toBeUndefined();
-    expect(after.pendingClearCart).toBeUndefined();
+    expect(after.pending).toBeUndefined();
+    expect(after.pendingData).toBeUndefined();
     expect(res.spoken).toMatch(/カートを空にしました/);
   });
 
   test('pendingClearCart + No cancels clear', async () => {
-    const handlerInput = makeHandlerInput({ intentName: 'AMAZON.NoIntent', sessionAttrs: { pendingClearCart: true, cart: [{ id:1 }] } });
+    const handlerInput = makeHandlerInput({ intentName: 'AMAZON.NoIntent', sessionAttrs: { pending: true, pendingData: { kind: 'clearCart' }, cart: [{ id:1 }] } });
     const res = await PendingConfirmationHandler.handle(handlerInput);
     const after = handlerInput.attributesManager.getSessionAttributes();
     expect(after.cart).toBeDefined();
-    expect(after.pendingClearCart).toBeUndefined();
+    expect(after.pending).toBeUndefined();
+    expect(after.pendingData).toBeUndefined();
     expect(res.spoken).toMatch(/クリアをキャンセルしました/);
   });
 
   test('pendingStopOrder + Yes clears persistent and session', async () => {
-    const handlerInput = makeHandlerInput({ intentName: 'AMAZON.YesIntent', sessionAttrs: { pendingStopOrder: true, cart: [{ id:1 }], pendingAdd: {} }, persistentAttrs: { cartData: { cart: [{ id:1 }] }, currentOrder: { id: 'o1' } } });
+    const handlerInput = makeHandlerInput({ intentName: 'AMAZON.YesIntent', sessionAttrs: { pending: true, pendingData: { kind: 'stopOrder' }, cart: [{ id:1 }] }, persistentAttrs: { cartData: { cart: [{ id:1 }] }, currentOrder: { id: 'o1' } } });
     const res = await PendingConfirmationHandler.handle(handlerInput);
     const afterSession = handlerInput.attributesManager.getSessionAttributes();
     const afterPersistent = await handlerInput.attributesManager.getPersistentAttributes();
     expect(afterSession.cart).toBeUndefined();
-    expect(afterSession.pendingStopOrder).toBeUndefined();
+    expect(afterSession.pending).toBeUndefined();
+    expect(afterSession.pendingData).toBeUndefined();
     expect(afterPersistent.cartData).toBeUndefined();
     expect(afterPersistent.currentOrder).toBeUndefined();
     expect(res.spoken).toMatch(/中止しました/);
   });
 
   test('pendingStopOrder + No cancels cancellation', async () => {
-    const handlerInput = makeHandlerInput({ intentName: 'AMAZON.NoIntent', sessionAttrs: { pendingStopOrder: true, cart: [{ id:1 }] } });
+    const handlerInput = makeHandlerInput({ intentName: 'AMAZON.NoIntent', sessionAttrs: { pending: true, pendingData: { kind: 'stopOrder' }, cart: [{ id:1 }] } });
     const res = await PendingConfirmationHandler.handle(handlerInput);
     const after = handlerInput.attributesManager.getSessionAttributes();
     expect(after.cart).toBeDefined();
-    expect(after.pendingStopOrder).toBeUndefined();
+    expect(after.pending).toBeUndefined();
+    expect(after.pendingData).toBeUndefined();
     expect(res.spoken).toMatch(/中止をキャンセルしました|キャンセルしました/);
   });
 });

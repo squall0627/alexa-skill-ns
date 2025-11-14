@@ -13,16 +13,14 @@ async function stopOrder(attributesManager) {
   // clear session order-related fields
   delete sessionAttributes.cart;
   delete sessionAttributes.cartDelivery;
-  delete sessionAttributes.pendingAdd;
-  delete sessionAttributes.pendingDelete;
   delete sessionAttributes.availablePromos;
   delete sessionAttributes.appliedPromo;
   delete sessionAttributes.lastAdded;
+  // clear lastAction and any generic pending state
   delete sessionAttributes.lastAction;
-  delete sessionAttributes._cartDirty;
-  // also clear pendingStopOrder/pendingClearCart if present
-  delete sessionAttributes.pendingStopOrder;
-  delete sessionAttributes.pendingClearCart;
+  sessionAttributes._cartDirty = true;
+  delete sessionAttributes.pending;
+  delete sessionAttributes.pendingData;
 
   attributesManager.setSessionAttributes(sessionAttributes);
 }
@@ -31,15 +29,14 @@ function clearCartSession(attributesManager) {
   const sessionAttributes = attributesManager.getSessionAttributes() || {};
   delete sessionAttributes.cart;
   delete sessionAttributes.cartDelivery;
-  delete sessionAttributes.pendingAdd;
-  delete sessionAttributes.pendingDelete;
   delete sessionAttributes.availablePromos;
   delete sessionAttributes.appliedPromo;
   delete sessionAttributes.lastAdded;
+  // clear lastAction and generic pending
   delete sessionAttributes.lastAction;
   sessionAttributes._cartDirty = true;
-  // clear pending flag
-  delete sessionAttributes.pendingClearCart;
+  delete sessionAttributes.pending;
+  delete sessionAttributes.pendingData;
 
   attributesManager.setSessionAttributes(sessionAttributes);
 }
@@ -48,4 +45,3 @@ module.exports = {
   stopOrder,
   clearCartSession,
 };
-

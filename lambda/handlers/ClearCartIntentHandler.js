@@ -11,6 +11,9 @@ module.exports = {
     const request = handlerInput.requestEnvelope;
     const attributesManager = handlerInput.attributesManager;
     const sessionAttributes = attributesManager.getSessionAttributes() || {};
+    const { markLastAction } = require('../utils/sessionUtils');
+    // mark last action as this intent
+    markLastAction(handlerInput, 'ClearCartIntent');
 
     // Check built-in confirmation status (if interaction model uses confirmation)
     const intent = request.request.intent || {};
@@ -30,8 +33,9 @@ module.exports = {
       return handlerInput.responseBuilder.speak(speak).reprompt('ほかに何をしますか？').getResponse();
     }
 
-    // confirmationStatus === 'NONE' -> ask for confirmation and set pending flag
-    sessionAttributes.pendingClearCart = true;
+    // confirmationStatus === 'NONE' -> ask for confirmation and set generic pending flag
+    sessionAttributes.pending = true;
+    sessionAttributes.pendingData = { kind: 'clearCart' };
     attributesManager.setSessionAttributes(sessionAttributes);
 
     const speak = 'カートの中身を全部消してもよろしいですか？';

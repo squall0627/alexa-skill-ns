@@ -1,4 +1,4 @@
-const ProvideQuantityIntentHandler = require('../handlers/ProvideQuantityIntentHandler');
+const ProvideQuantityIntentHandler = require('../handlers/ProvideAddQuantityIntentHandler');
 
 function mockAttributesManager(initial = {}) {
   let session = { ...initial };
@@ -39,7 +39,6 @@ describe('ProvideQuantityIntentHandler', () => {
     // response should ask which product
     expect(res).toBeDefined();
     expect(res.speak).toBeUndefined(); // because getResponse returns object with spoken in our mock
-    const response = res; // ensure no crash
+    // ensure no crash
   });
-});
-
+ });

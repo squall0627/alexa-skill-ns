@@ -9,8 +9,12 @@ module.exports = {
     const sessionAttributes = handlerInput.attributesManager.getSessionAttributes() || {};
 
     // このハンドラは、ユーザーの Yes/No があり、直前のアクションが 'afterAdd' の場合に処理する
-    if (Alexa.getRequestType(request) === 'IntentRequest' && sessionAttributes.lastAction === 'afterAdd') {
-      return intentName === 'AMAZON.YesIntent' || intentName === 'AMAZON.NoIntent';
+    // Now use generic pending + lastAction + pendingData.kind === 'afterAddDecision'
+    if (Alexa.getRequestType(request) === 'IntentRequest' && sessionAttributes.pending && sessionAttributes.lastAction === 'AddCartIntent') {
+      const pendingData = sessionAttributes.pendingData || {};
+      if (pendingData.kind === 'afterAddDecision') {
+        return intentName === 'AMAZON.YesIntent' || intentName === 'AMAZON.NoIntent';
+      }
     }
     return false;
   },
@@ -23,7 +27,9 @@ module.exports = {
     if (intentName === 'AMAZON.YesIntent') {
       // ユーザーは続けて検索したい
       // 状態をクリアして検索プロンプトへ
-      delete sessionAttributes.lastAction;
+      // clear pending and related lastAdded
+      delete sessionAttributes.pending;
+      delete sessionAttributes.pendingData;
       delete sessionAttributes.lastAdded;
       attributesManager.setSessionAttributes(sessionAttributes);
 
@@ -35,7 +41,9 @@ module.exports = {
     // NoIntent -> ユーザーはカート確認または精算に進みたい
     // ここでは簡易的にカート内容を読み上げるか、カートが空ならその旨を伝える
     const cart = sessionAttributes.cart || [];
-    delete sessionAttributes.lastAction;
+    // clear pending and lastAdded
+    delete sessionAttributes.pending;
+    delete sessionAttributes.pendingData;
     delete sessionAttributes.lastAdded;
     attributesManager.setSessionAttributes(sessionAttributes);
 

@@ -9,7 +9,9 @@ module.exports = {
     const intentName = Alexa.getIntentName(request);
     if (intentName !== 'AMAZON.YesIntent' && intentName !== 'AMAZON.NoIntent') return false;
     const sessionAttributes = handlerInput.attributesManager.getSessionAttributes() || {};
-    return Boolean(sessionAttributes.pendingClearCart || sessionAttributes.pendingCancelOrder);
+    // handle only when generic pending flag is set and lastAction indicates a confirmation-type intent
+    const pendingData = sessionAttributes.pendingData || {};
+    return Boolean(sessionAttributes.pending && ((sessionAttributes.lastAction === 'ClearCartIntent' && pendingData.kind === 'clearCart') || (sessionAttributes.lastAction === 'StopOrderIntent' && pendingData.kind === 'stopOrder')));
   },
   async handle(handlerInput) {
     const request = handlerInput.requestEnvelope;
@@ -18,13 +20,16 @@ module.exports = {
     const sessionAttributes = attributesManager.getSessionAttributes() || {};
 
     const isYes = intentName === 'AMAZON.YesIntent';
-    const isNo = intentName === 'AMAZON.NoIntent';
+    // const isNo not needed; use else branch where appropriate
 
     // Handle pendingClearCart
     const orderUtils = require('../utils/orderUtils');
-    if (sessionAttributes.pendingClearCart) {
-      // clear the pending flag either way
-      delete sessionAttributes.pendingClearCart;
+    // Determine which confirmation is pending based on lastAction
+    const pendingData = sessionAttributes.pendingData || {};
+    if (sessionAttributes.pending && sessionAttributes.lastAction === 'ClearCartIntent' && pendingData.kind === 'clearCart') {
+      // clear the generic pending flag
+      delete sessionAttributes.pending;
+      delete sessionAttributes.pendingData;
 
       if (isYes) {
         orderUtils.clearCartSession(attributesManager);
@@ -38,10 +43,10 @@ module.exports = {
       }
     }
 
-    // Handle pendingCancelOrder
-    if (sessionAttributes.pendingStopOrder) {
-      // clear flag
-      delete sessionAttributes.pendingStopOrder;
+    if (sessionAttributes.pending && sessionAttributes.lastAction === 'StopOrderIntent' && pendingData.kind === 'stopOrder') {
+      // clear pending
+      delete sessionAttributes.pending;
+      delete sessionAttributes.pendingData;
       if (isYes) {
         await orderUtils.stopOrder(attributesManager);
         const speak = 'ご注文を中止しました。必要な場合はまた最初から注文を開始してください。';

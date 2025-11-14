@@ -5,6 +5,13 @@ const Alexa = require('ask-sdk-core');
 module.exports = {
   canHandle(handlerInput) {
     const request = handlerInput.requestEnvelope;
+    const sessionAttributes = handlerInput.attributesManager && handlerInput.attributesManager.getSessionAttributes ? handlerInput.attributesManager.getSessionAttributes() || {} : {};
+    // Only handle when generic pending flag is set and lastAction was DeleteCartIntent
+    if (!sessionAttributes.pending || sessionAttributes.lastAction !== 'DeleteCartIntent') {
+      return false;
+    }
+    const pendingData = sessionAttributes.pendingData || {};
+    if (pendingData.kind !== 'deleteQuantity') return false;
     return Alexa.getRequestType(request) === 'IntentRequest' && Alexa.getIntentName(request) === 'ProvideDeleteQuantityIntent';
   },
   handle(handlerInput) {
@@ -15,8 +22,8 @@ module.exports = {
     const attributesManager = handlerInput.attributesManager;
     const sessionAttributes = attributesManager.getSessionAttributes() || {};
 
-    const pending = sessionAttributes.pendingDelete;
-    if (!pending || !pending.productId) {
+    const pendingData = sessionAttributes.pendingData;
+    if (!pendingData || !pendingData.productId) {
       const speak = 'どの商品を削除するのか分かりませんでした。商品番号を教えてください。';
       return handlerInput.responseBuilder.speak(speak).reprompt('削除したい商品の番号を教えてください。').getResponse();
     }
@@ -40,12 +47,13 @@ module.exports = {
 
     const cart = sessionAttributes.cart || [];
     const cartUtils = require('../utils/cartUtils');
-    const { cart: newCart, removedItem, remainingQuantity, removedCompletely } = cartUtils.removeOrReduceCartItem(cart, pending.productId, quantity);
+    const { cart: newCart, remainingQuantity, removedCompletely } = cartUtils.removeOrReduceCartItem(cart, pendingData.productId, quantity);
 
     sessionAttributes.cart = newCart;
-    sessionAttributes.lastAction = 'afterDelete';
     sessionAttributes._cartDirty = true;
-    delete sessionAttributes.pendingDelete;
+    // clear generic pending state
+    delete sessionAttributes.pending;
+    delete sessionAttributes.pendingData;
     attributesManager.setSessionAttributes(sessionAttributes);
 
     const speak = removedCompletely
@@ -55,4 +63,3 @@ module.exports = {
     return handlerInput.responseBuilder.speak(speak).reprompt('ほかに何をしますか？').getResponse();
   }
 };
-

@@ -12,6 +12,11 @@ module.exports = {
     const request = handlerInput.requestEnvelope;
     const attributesManager = handlerInput.attributesManager;
 
+    // mark last action as this intent
+    const sessionAttributes = attributesManager.getSessionAttributes() || {};
+    const { markLastAction } = require('../utils/sessionUtils');
+    markLastAction(handlerInput, 'StopOrderIntent');
+
     const intent = request.request.intent || {};
     const confirmationStatus = intent.confirmationStatus || 'NONE';
 
@@ -27,8 +32,9 @@ module.exports = {
     }
 
     // NONE -> set pending and ask
-    const sessionAttributes = attributesManager.getSessionAttributes() || {};
-    sessionAttributes.pendingStopOrder = true;
+    // set generic pending flag
+    sessionAttributes.pending = true;
+    sessionAttributes.pendingData = { kind: 'stopOrder' };
     attributesManager.setSessionAttributes(sessionAttributes);
     const speak = '今回のご購入を中止してもよろしいですか？';
     const reprompt = '今回の購入を中止してもよろしいですか？ はいで中止、いいえで継続します。';

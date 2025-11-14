@@ -10,6 +10,9 @@ module.exports = {
   handle(handlerInput) {
     const attributesManager = handlerInput.attributesManager;
     const sessionAttributes = attributesManager.getSessionAttributes() || {};
+    // mark last action as this intent via helper
+    const { markLastAction } = require('../utils/sessionUtils');
+    markLastAction(handlerInput, 'ViewCartIntent');
     const cart = sessionAttributes.cart || [];
 
     if (!cart || cart.length === 0) {
@@ -17,7 +20,7 @@ module.exports = {
       return handlerInput.responseBuilder.speak(speak).reprompt('何を購入しますか？').getResponse();
     }
 
-    // 按照加入順（cart 数组顺序）从头到尾读出信息，并计算合计
+    // 按照加入顺（cart 数组顺序）从头到尾读出信息，并计算合计
     let totalPrice = 0;
     const parts = cart.map((item, idx) => {
       const num = idx + 1;

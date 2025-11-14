@@ -15,6 +15,9 @@ module.exports = {
 
     const attributesManager = handlerInput.attributesManager;
     let sessionAttributes = attributesManager.getSessionAttributes() || {};
+    const { markLastAction } = require('../utils/sessionUtils');
+    // mark this handler as the last action (intent name)
+    markLastAction(handlerInput, 'AddCartIntent');
 
     console.log(`[AddCartIntent] Handler started for session: ${sessionId}`);
     console.log(`[AddCartIntent] Current sessionAttributes keys:`, Object.keys(sessionAttributes));
@@ -58,7 +61,6 @@ module.exports = {
       const { cart: newCart, item, totalQuantity } = cartUtils.addOrMergeCartItem(cart, product, quantity);
       sessionAttributes.cart = newCart;
       sessionAttributes.lastAdded = item;
-      sessionAttributes.lastAction = 'afterAdd';
       sessionAttributes._cartDirty = true;
 
       attributesManager.setSessionAttributes(sessionAttributes);
@@ -71,10 +73,9 @@ module.exports = {
     }
 
     // 用户没有提供数量：保存 pendingAdd 并向用户询问数量
-    sessionAttributes.pendingAdd = {
-      index: index,
-      product: product
-    };
+    // save a generic pending flag + data; lastAction already set to 'AddCartIntent'
+    sessionAttributes.pending = true;
+    sessionAttributes.pendingData = { kind: 'addQuantity', index: index, product: product };
     attributesManager.setSessionAttributes(sessionAttributes);
 
     const speak = `${product.name} を何個カートに入れますか？`;

@@ -9,15 +9,17 @@ const CartPersistenceHelper = require('./utils/CartPersistenceHelper');
 
 const SearchProductIntentHandler = require('./handlers/SearchProductIntentHandler');
 const AddCartIntentHandler = require('./handlers/AddCartIntentHandler');
-const ProvideQuantityIntentHandler = require('./handlers/ProvideQuantityIntentHandler');
+const ProvideAddQuantityIntentHandler = require('./handlers/ProvideAddQuantityIntentHandler');
 const DeleteCartIntentHandler = require('./handlers/DeleteCartIntentHandler');
 const ProvideDeleteQuantityIntentHandler = require('./handlers/ProvideDeleteQuantityIntentHandler');
 const ViewCartIntentHandler = require('./handlers/ViewCartIntentHandler');
 const ClearCartIntentHandler = require('./handlers/ClearCartIntentHandler');
 const PendingConfirmationHandler = require('./handlers/PendingConfirmationHandler');
 const AfterAddDecisionHandler = require('./handlers/AfterAddDecisionHandler');
+const SearchAvailableDeliverySlotIntentHandler = require('./handlers/SearchAvailableDeliverySlotIntentHandler');
 const SelectDeliverySlotIntentHandler = require('./handlers/SelectDeliverySlotIntentHandler');
-const ChooseDeliverySlotIntentHandler = require('./handlers/ChooseDeliverySlotIntentHandler');
+const SearchAvailablePromotionIntentHandler = require('./handlers/SearchAvailablePromotionIntentHandler');
+const SelectPromotionIntentHandler = require('./handlers/SelectPromotionIntentHandler');
 const StopOrderHandler = require('./handlers/StopOrderHandler');
 
 const LaunchRequestHandler = {
@@ -227,15 +229,17 @@ exports.handler = Alexa.SkillBuilders.custom()
         SessionEndedRequestHandler,
         SearchProductIntentHandler,
         AddCartIntentHandler,
-        ProvideQuantityIntentHandler,
+        ProvideAddQuantityIntentHandler,
         DeleteCartIntentHandler,
         ProvideDeleteQuantityIntentHandler,
         ViewCartIntentHandler,
         ClearCartIntentHandler,
         PendingConfirmationHandler,
         AfterAddDecisionHandler,
+        SearchAvailableDeliverySlotIntentHandler,
         SelectDeliverySlotIntentHandler,
-        ChooseDeliverySlotIntentHandler,
+        SearchAvailablePromotionIntentHandler,
+        SelectPromotionIntentHandler,
         StopOrderHandler,
         IntentReflectorHandler)
     .addRequestInterceptors(LoadCartInterceptor)

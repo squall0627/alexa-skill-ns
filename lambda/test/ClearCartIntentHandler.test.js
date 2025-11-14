@@ -33,7 +33,8 @@ describe('ClearCartIntentHandler', () => {
     const handlerInput = makeHandlerInput({ intent: { name: 'ClearCartIntent', confirmationStatus: 'NONE' }, sessionAttrs: { cart: [{ id:1 }] } });
     const res = ClearCartIntentHandler.handle(handlerInput);
     const after = handlerInput.attributesManager.getSessionAttributes();
-    expect(after.pendingClearCart).toBe(true);
+    expect(after.pending).toBe(true);
+    expect(after.pendingData && after.pendingData.kind).toBe('clearCart');
     expect(res.spoken).toMatch(/全部消してもよろしいですか/);
   });
 
@@ -53,4 +54,3 @@ describe('ClearCartIntentHandler', () => {
     expect(res.spoken).toMatch(/キャンセルしました/);
   });
 });
-

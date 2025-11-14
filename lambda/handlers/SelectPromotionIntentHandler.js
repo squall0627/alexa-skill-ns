@@ -6,7 +6,8 @@ const Alexa = require('ask-sdk-core');
 module.exports = {
   canHandle(handlerInput) {
     const request = handlerInput.requestEnvelope;
-    return Alexa.getRequestType(request) === 'IntentRequest' && Alexa.getIntentName(request) === 'SelectPromotionIntent';
+    const sessionAttributes = handlerInput.attributesManager && handlerInput.attributesManager.getSessionAttributes ? handlerInput.attributesManager.getSessionAttributes() || {} : {};
+    return Alexa.getRequestType(request) === 'IntentRequest' && Alexa.getIntentName(request) === 'SelectPromotionIntent' && sessionAttributes.lastAction === 'SearchAvailablePromotionIntent';
   },
   async handle(handlerInput) {
     const request = handlerInput.requestEnvelope;
@@ -37,6 +38,10 @@ module.exports = {
     const deliveryFee = sessionAttributes.cartDelivery ? sessionAttributes.cartDelivery.fee || 0 : 0;
     const CheckoutService = require('../services/CheckoutService');
     const final = await CheckoutService.finalize(cart, deliveryFee, selected);
+
+    // const { markLastAction } = require('../utils/sessionUtils');
+    // // mark last action as this intent
+    // markLastAction(handlerInput, 'SelectPromotionIntent');
 
     const spoken = `${selected.name}を適用しました。${final.summary} ほかに何をしますか？`;
     return handlerInput.responseBuilder.speak(spoken).reprompt('ほかに何をしますか？').getResponse();

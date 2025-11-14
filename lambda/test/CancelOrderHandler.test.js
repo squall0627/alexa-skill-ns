@@ -28,12 +28,13 @@ function makeHandlerInput({ intent = null, sessionAttrs = {}, persistentAttrs = 
 
 describe('StopOrderHandler (was CancelOrderHandler)', () => {
   test('clears persistent cartData and session order-related fields', async () => {
-    const handlerInput = makeHandlerInput({ intent: { name: 'StopOrderIntent', confirmationStatus: 'CONFIRMED' }, sessionAttrs: { cart: [{ id:1 }], pendingAdd: { } }, persistentAttrs: { cartData: { cart: [{ id:1 }] }, currentOrder: { id: 'o1' } } });
+    const handlerInput = makeHandlerInput({ intent: { name: 'StopOrderIntent', confirmationStatus: 'CONFIRMED' }, sessionAttrs: { cart: [{ id:1 }] }, persistentAttrs: { cartData: { cart: [{ id:1 }] }, currentOrder: { id: 'o1' } } });
     const res = await StopOrderHandler.handle(handlerInput);
     const afterSession = handlerInput.attributesManager.getSessionAttributes();
     const afterPersistent = await handlerInput.attributesManager.getPersistentAttributes();
     expect(afterSession.cart).toBeUndefined();
-    expect(afterSession.pendingAdd).toBeUndefined();
+    expect(afterSession.pending).toBeUndefined();
+    expect(afterSession.pendingData).toBeUndefined();
     expect(afterPersistent.cartData).toBeUndefined();
     expect(afterPersistent.currentOrder).toBeUndefined();
     expect(res.spoken).toMatch(/中止しました/);

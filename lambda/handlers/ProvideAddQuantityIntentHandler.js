@@ -1,10 +1,18 @@
-// lambda/handlers/ProvideQuantityIntentHandler.js
+// lambda/handlers/ProvideAddQuantityIntentHandler.js
 // 日本語：ユーザーが数量を応答したときに pendingAdd を完成させるハンドラ
 const Alexa = require('ask-sdk-core');
 
 module.exports = {
   canHandle(handlerInput) {
     const request = handlerInput.requestEnvelope;
+    const sessionAttributes = handlerInput.attributesManager && handlerInput.attributesManager.getSessionAttributes ? handlerInput.attributesManager.getSessionAttributes() || {} : {};
+    // Only handle ProvideQuantity when a generic pending flag is set and the lastAction was AddCartIntent
+    if (!sessionAttributes.pending || sessionAttributes.lastAction !== 'AddCartIntent') {
+      return false;
+    }
+    // also ensure the pendingData kind matches addQuantity
+    const pendingData = sessionAttributes.pendingData || {};
+    if (pendingData.kind !== 'addQuantity') return false;
     return Alexa.getRequestType(request) === 'IntentRequest' && Alexa.getIntentName(request) === 'ProvideQuantityIntent';
   },
   handle(handlerInput) {
@@ -15,8 +23,9 @@ module.exports = {
     const attributesManager = handlerInput.attributesManager;
     const sessionAttributes = attributesManager.getSessionAttributes() || {};
 
-    const pending = sessionAttributes.pendingAdd;
-    if (!pending || !pending.product) {
+    // pending data is stored in pendingData with kind 'addQuantity'
+    const pendingData = sessionAttributes.pendingData;
+    if (!pendingData || pendingData.kind !== 'addQuantity' || !pendingData.product) {
       const speak = 'どの商品についての個数か分かりませんでした。追加したい商品を番号で教えてください。';
       return handlerInput.responseBuilder.speak(speak).reprompt('どの商品をカートに入れますか？').getResponse();
     }
@@ -32,17 +41,17 @@ module.exports = {
       return handlerInput.responseBuilder.speak(speak).reprompt('個数を教えてください。').getResponse();
     }
 
-    const product = pending.product;
+    const product = pendingData.product;
     const cart = sessionAttributes.cart || [];
     const cartUtils = require('../utils/cartUtils');
     const { cart: newCart, item, totalQuantity } = cartUtils.addOrMergeCartItem(cart, product, quantity);
     sessionAttributes.cart = newCart;
     sessionAttributes.lastAdded = item;
-    sessionAttributes.lastAction = 'afterAdd';
     sessionAttributes._cartDirty = true;
 
-    // 清除 pendingAdd
-    delete sessionAttributes.pendingAdd;
+    // clear generic pending state
+    delete sessionAttributes.pending;
+    delete sessionAttributes.pendingData;
     attributesManager.setSessionAttributes(sessionAttributes);
 
     const shortInfo = `${product.name}、メーカー：${product.brand}、価格：${product.price}円`;
