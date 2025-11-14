@@ -50,11 +50,11 @@
             }
           ],
           "samples": [
-            "{ItemNumber} 番を{Quantity}個入れて",
+            "{ItemNumber} 番 を {Quantity} 個 入れて",
             "{ItemNumber} 番 {Quantity} 個",
-            "{ItemNumber} を{Quantity}個カートに入れて",
-            "{ItemNumber} を追加して",
-            "{ItemNumber} 番を入れて",
+            "{ItemNumber} を {Quantity} 個 カートに入れて",
+            "{ItemNumber} を 追加して",
+            "{ItemNumber} 番 を 入れて",
             "{ItemNumber} 番"
           ]
         },
@@ -130,10 +130,10 @@
             }
           ],
           "samples": [
-            "{ItemNumber} 番を削除して",
-            "{ItemNumber} 番を{Quantity}個削除して",
-            "{ItemNumber} をカートから削除して",
-            "{ItemNumber} を全部削除して"
+            "{ItemNumber} 番 を 削除して",
+            "{ItemNumber} 番 を {Quantity} 個 削除して",
+            "{ItemNumber} を カートから 削除して",
+            "{ItemNumber} を 全部 削除して"
           ]
         },
         {
