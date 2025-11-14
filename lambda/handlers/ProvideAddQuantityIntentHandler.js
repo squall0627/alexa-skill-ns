@@ -13,7 +13,7 @@ module.exports = {
     // also ensure the pendingData kind matches addQuantity
     const pendingData = sessionAttributes.pendingData || {};
     if (pendingData.kind !== 'addQuantity') return false;
-    return Alexa.getRequestType(request) === 'IntentRequest' && Alexa.getIntentName(request) === 'ProvideQuantityIntent';
+    return Alexa.getRequestType(request) === 'IntentRequest' && Alexa.getIntentName(request) === 'ProvideAddQuantityIntent';
   },
   handle(handlerInput) {
     const requestEnvelope = handlerInput.requestEnvelope;
