@@ -5,7 +5,7 @@ const Alexa = require('ask-sdk-core');
 module.exports = {
   canHandle(handlerInput) {
     const request = handlerInput.requestEnvelope;
-    const sessionAttributes = handlerInput.attributesManager && handlerInput.attributesManager.getSessionAttributes ? handlerInput.attributesManager.getSessionAttributes() || {} : {};
+    const sessionAttributes = handlerInput.attributesManager.getSessionAttributes() || {};
     // Only handle when generic pending flag is set and lastAction was DeleteCartIntent
     if (!sessionAttributes.pending || sessionAttributes.lastAction !== 'DeleteCartIntent') {
       return false;

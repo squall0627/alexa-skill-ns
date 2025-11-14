@@ -6,7 +6,7 @@ const Alexa = require('ask-sdk-core');
 module.exports = {
   canHandle(handlerInput) {
     const request = handlerInput.requestEnvelope;
-    const sessionAttributes = handlerInput.attributesManager && handlerInput.attributesManager.getSessionAttributes ? handlerInput.attributesManager.getSessionAttributes() || {} : {};
+    const sessionAttributes = handlerInput.attributesManager.getSessionAttributes() || {};
     return Alexa.getRequestType(request) === 'IntentRequest' && Alexa.getIntentName(request) === 'SelectPromotionIntent' && sessionAttributes.lastAction === 'SearchAvailablePromotionIntent';
   },
   async handle(handlerInput) {
