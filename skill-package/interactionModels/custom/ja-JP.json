@@ -145,6 +145,19 @@
           ]
         },
         {
+          "name": "SearchAvailableDeliveryAddressIntent",
+          "slots": [],
+          "samples": [
+            "住所を選ぶ",
+            "住所を選びたい",
+            "配送先を選びたい",
+            "配送先を変更したい",
+            "配送先を表示して",
+            "登録済みの住所を見せて",
+            "配送先を選択して"
+          ]
+        },
+        {
           "name": "SearchAvailablePromotionIntent",
           "slots": [],
           "samples": [
@@ -169,7 +182,6 @@
             "confirmation": "CONFIRM_STOP_ORDER"
           }
         },
-
         {
           "name": "AMAZON.NavigateHomeIntent",
           "samples": []

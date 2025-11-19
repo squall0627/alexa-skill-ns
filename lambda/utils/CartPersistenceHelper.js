@@ -13,6 +13,9 @@ function buildCartData(sessionAttributes) {
   if (sessionAttributes.cartDelivery) {
     data.cartDelivery = sessionAttributes.cartDelivery;
   }
+  if (sessionAttributes.cartDeliveryAddress) {
+    data.cartDeliveryAddress = sessionAttributes.cartDeliveryAddress;
+  }
   // 你可以在这里加入更多需要持久化的 cart 元数据
   return data;
 }
@@ -41,4 +44,3 @@ module.exports = {
   buildCartData,
   shouldSave
 };
-

@@ -11,8 +11,12 @@ async function stopOrder(attributesManager) {
 
   const sessionAttributes = attributesManager.getSessionAttributes() || {};
   // clear session order-related fields
+  console.log('[orderUtils] stopOrder clearing session attributes');
   delete sessionAttributes.cart;
+  delete sessionAttributes.availableDeliverySlots;
   delete sessionAttributes.cartDelivery;
+  delete sessionAttributes.availableDeliveryAddresses;
+  delete sessionAttributes.cartDeliveryAddress;
   delete sessionAttributes.availablePromos;
   delete sessionAttributes.appliedPromo;
   delete sessionAttributes.lastAdded;
@@ -27,8 +31,10 @@ async function stopOrder(attributesManager) {
 
 function clearCartSession(attributesManager) {
   const sessionAttributes = attributesManager.getSessionAttributes() || {};
+  console.log('[orderUtils] clearCartSession before:', JSON.stringify(sessionAttributes));
   delete sessionAttributes.cart;
-  delete sessionAttributes.cartDelivery;
+  delete sessionAttributes.availableDeliverySlots;
+  delete sessionAttributes.availableDeliveryAddresses;
   delete sessionAttributes.availablePromos;
   delete sessionAttributes.appliedPromo;
   delete sessionAttributes.lastAdded;
@@ -37,6 +43,7 @@ function clearCartSession(attributesManager) {
   sessionAttributes._cartDirty = true;
   delete sessionAttributes.pending;
   delete sessionAttributes.pendingData;
+  console.log('[orderUtils] clearCartSession after:', JSON.stringify(sessionAttributes));
 
   attributesManager.setSessionAttributes(sessionAttributes);
 }

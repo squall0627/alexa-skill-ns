@@ -22,6 +22,8 @@ const SearchAvailablePromotionIntentHandler = require('./handlers/SearchAvailabl
 const SelectPromotionIntentHandler = require('./handlers/SelectPromotionIntentHandler');
 const StopOrderHandler = require('./handlers/StopOrderHandler');
 const NumberOnlyIntentHandler = require('./handlers/NumberOnlyIntentHandler');
+const SearchAvailableDeliveryAddressIntentHandler = require('./handlers/SearchAvailableDeliveryAddressIntentHandler');
+const SelectDeliveryAddressIntentHandler = require('./handlers/SelectDeliveryAddressIntentHandler');
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
@@ -161,6 +163,7 @@ const LoadCartInterceptor = {
             if (cartData) {
                 sessionAttributes.cart = Array.isArray(cartData.cart) ? cartData.cart : [];
                 if (cartData.cartDelivery) sessionAttributes.cartDelivery = cartData.cartDelivery;
+                if (cartData.cartDeliveryAddress) sessionAttributes.cartDeliveryAddress = cartData.cartDeliveryAddress;
                 console.log('[LoadCartInterceptor] Loaded cartData');
             }
 
@@ -239,6 +242,8 @@ exports.handler = Alexa.SkillBuilders.custom()
         AfterAddDecisionHandler,
         SearchAvailableDeliverySlotIntentHandler,
         SelectDeliverySlotIntentHandler,
+        SearchAvailableDeliveryAddressIntentHandler,
+        SelectDeliveryAddressIntentHandler,
         SearchAvailablePromotionIntentHandler,
         SelectPromotionIntentHandler,
         StopOrderHandler,

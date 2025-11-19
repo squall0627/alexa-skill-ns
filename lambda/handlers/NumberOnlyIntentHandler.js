@@ -8,6 +8,7 @@ const ProvideDeleteQuantityIntentHandler = require('./ProvideDeleteQuantityInten
 const SelectDeliverySlotIntentHandler = require('./SelectDeliverySlotIntentHandler');
 const SelectPromotionIntentHandler = require('./SelectPromotionIntentHandler');
 const AddCartIntentHandler = require('./AddCartIntentHandler');
+const SelectDeliveryAddressIntentHandler = require('./SelectDeliveryAddressIntentHandler');
 
 module.exports = {
   canHandle(handlerInput) {
@@ -29,7 +30,8 @@ module.exports = {
       'AddCartIntent',
       'DeleteCartIntent',
       'SearchAvailableDeliverySlotIntent',
-      'SearchAvailablePromotionIntent'
+      'SearchAvailablePromotionIntent',
+      'SearchAvailableDeliveryAddressIntent'
     ];
     return followUps.includes(sessionAttributes.lastAction);
   },
@@ -86,6 +88,14 @@ module.exports = {
         cloneRequestEnvelope.request.intent.slots = { PromoNumber: { name: 'PromoNumber', value: numberValue } };
         const fakeHandlerInput = Object.assign({}, handlerInput, { requestEnvelope: cloneRequestEnvelope });
         return await SelectPromotionIntentHandler.handle(fakeHandlerInput);
+      }
+
+      if (lastAction === 'SearchAvailableDeliveryAddressIntent') {
+        // Route to SelectDeliveryAddressIntentHandler: map Number -> AddressNumber
+        cloneRequestEnvelope.request.intent.name = 'SelectDeliveryAddressIntent';
+        cloneRequestEnvelope.request.intent.slots = { AddressNumber: { name: 'AddressNumber', value: numberValue } };
+        const fakeHandlerInput = Object.assign({}, handlerInput, { requestEnvelope: cloneRequestEnvelope });
+        return await SelectDeliveryAddressIntentHandler.handle(fakeHandlerInput);
       }
 
       // Fallback: let the IntentReflector or normal chain handle it
