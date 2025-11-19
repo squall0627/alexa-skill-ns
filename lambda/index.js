@@ -193,9 +193,15 @@ const LoadCartInterceptor = {
             // 只从 unified cartData 加载
             const cartData = persistentAttributes.cartData || null;
             if (cartData) {
+                // overwrite session values from persistent cartData (persistent authoritative)
                 sessionAttributes.cart = Array.isArray(cartData.cart) ? cartData.cart : [];
+                // Overwrite delivery selections directly
                 if (cartData.cartDelivery) sessionAttributes.cartDelivery = cartData.cartDelivery;
                 if (cartData.cartDeliveryAddress) sessionAttributes.cartDeliveryAddress = cartData.cartDeliveryAddress;
+                // Overwrite applied promotion snapshot directly
+                if (cartData.appliedPromo) sessionAttributes.appliedPromo = cartData.appliedPromo;
+                // Overwrite paymentFlow directly (persistent takes precedence)
+                if (cartData.paymentFlow) sessionAttributes.paymentFlow = Object.assign({}, cartData.paymentFlow || {});
                 console.log('[LoadCartInterceptor] Loaded cartData');
             }
 
@@ -290,3 +296,6 @@ exports.handler = Alexa.SkillBuilders.custom()
     .withPersistenceAdapter(getPersistenceAdapter())
     .withCustomUserAgent('sample/hello-world/v1.2')
     .lambda();
+
+// Export LoadCartInterceptor for testing purposes
+module.exports.LoadCartInterceptor = LoadCartInterceptor;
