@@ -16,12 +16,48 @@ module.exports = {
     const requestEnvelope = handlerInput.requestEnvelope;
     const intent = requestEnvelope.request.intent || { slots: {} };
     const slots = intent.slots || {};
-    const numberValue = (slots.Points && slots.Points.value) || (slots.Number && slots.Number.value) || null;
+    const rawValue = (slots.Points && slots.Points.value) || (slots.Number && slots.Number.value) || null;
+    // Fallback: if slot not populated, try the raw input transcript (ASR) which sometimes contains the text
+    const inputTranscript = requestEnvelope.request && requestEnvelope.request.inputTranscript ? requestEnvelope.request.inputTranscript : null;
+    const effectiveRaw = rawValue || inputTranscript;
 
     const attributesManager = handlerInput.attributesManager;
     const sessionAttributes = attributesManager.getSessionAttributes() || {};
 
-    const points = Number(numberValue);
+    // helper: convert full-width digits to half-width
+    function toHalfWidth(str) {
+      return String(str).replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 65248));
+    }
+
+    // parse the raw slot value robustly
+    let points = null;
+    if (effectiveRaw !== null && effectiveRaw !== undefined) {
+      let rv = String(effectiveRaw).trim();
+      rv = toHalfWidth(rv);
+      // check for keywords meaning use all points
+      if (/^(全部|全て|ぜんぶ|全部使う|ぜんぶ使う)$/i.test(rv)) {
+        const balance = await PaymentService.getWaonBalance(attributesManager);
+        points = Number(balance || 0);
+      } else {
+        // extract first integer occurrence
+        const m = rv.match(/-?\d+/);
+        if (m && m[0]) {
+          points = parseInt(m[0], 10);
+        } else if (!isNaN(Number(rv))) {
+          points = Number(rv);
+        }
+      }
+    }
+
+    // If slot was empty or parsing failed, reprompt (do not coerce null -> 0)
+    if (points === null || !Number.isInteger(points) || points < 0) {
+      // keep lastAction so NumberOnlyIntent will route here
+      sessionAttributes.lastAction = 'SpecifyWaonPointsIntent';
+      attributesManager.setSessionAttributes(sessionAttributes);
+      const speak = '申し訳ありません。使うポイント数を数字で教えてください。例えば、100とお答えください。';
+      return handlerInput.responseBuilder.speak(speak).reprompt('使うポイント数を数字で教えてください。').getResponse();
+    }
+
     const validation = await PaymentService.validateWaonPoints(attributesManager, points);
     if (!validation.ok) {
       if (validation.reason === 'invalid') {
