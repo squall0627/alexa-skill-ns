@@ -33,13 +33,31 @@ const LaunchRequestHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
     },
-    handle(handlerInput) {
+    async handle(handlerInput) {
         console.log('LaunchRequest invoked');
-        const speakOutput = 'Welcome, you can say Hello or Help. Which would you like to try?';
+        const attributesManager = handlerInput.attributesManager;
+        const persistentAttributes = await attributesManager.getPersistentAttributes() || {};
+        const sessionAttributes = attributesManager.getSessionAttributes() || {};
+
+        const persistentCart = persistentAttributes.cartData && Array.isArray(persistentAttributes.cartData.cart)
+            ? persistentAttributes.cartData.cart
+            : [];
+        const sessionCart = Array.isArray(sessionAttributes.cart) ? sessionAttributes.cart : [];
+        const cartCount = sessionCart.length || persistentCart.length;
+
+        let speakOutput;
+        let reprompt;
+        if (cartCount > 0) {
+            speakOutput = `<speak>おかえりなさい。現在カートに${cartCount}件の商品が入っています。<break time="0.5s"/>続きを操作しますか？<break time="0.5s"/>例えば「カートを見せて」と言ってください。</speak>`;
+            reprompt = '続きを操作しますか？例えば「カートを見せて」と言ってください。';
+        } else {
+            speakOutput = `<speak>イオンネットスーパーへようこそ。商品を検索したり、カートに追加したり、注文を確認できます。<break time="0.5s"/>例えば「りんごを探して」や「カートを見せて」と話しかけてください。<break time="0.5s"/>クーポンの利用や配送日時の指定も可能です。ご希望の操作をお知らせください。</speak>`;
+            reprompt = '何をしますか？例えば「りんごを探して」と言ってください。';
+        }
 
         return handlerInput.responseBuilder
             .speak(speakOutput)
-            .reprompt(speakOutput)
+            .reprompt(reprompt)
             .getResponse();
     }
 };
@@ -51,11 +69,21 @@ const HelpIntentHandler = {
     },
     handle(handlerInput) {
         console.log('HelpIntent invoked');
-        const speakOutput = 'You can say hello to me! How can I help?';
+        const speakOutput = `<speak>` +
+            `こちらでは、以下の操作ができます。<break time="0.4s"/>` +
+            `1. 商品検索の方法。音声で商品名やカテゴリを指定します。<break time="0.4s"/>例えば「りんごを探して」「乳製品を表示して」「お茶のブランドを見せて」。<break time="0.6s"/>` +
+            `2. カートの確認・操作。カートの中身は「カートを見せて」で確認します。商品を追加するには「1番を追加して」「りんごを2個入れて」、削除は「1番を削除して」、数量変更は「1番を2個にして」と言ってください。<break time="0.6s"/>` +
+            `3. 配送便の選択。利用可能な配送便は「配送便を見せて」で確認できます。指定するには「明日の午後に届けて」「今週土曜日の午前にして」と話してください。<break time="0.6s"/>` +
+            `4. 配送先の選択。登録済みの住所を切り替えたり、新しい住所を選べます。例：「配送先を選ぶ」「配送先を変更して」「自宅に届けて」。<break time="0.6s"/>` +
+            `5. クーポンの利用。利用できるクーポンは「利用できるクーポンを教えて」で確認できます。クーポンを適用するには「クーポンを使ってください」と伝えてください。<break time="0.6s"/>` +
+            `6. 支払い方法。支払いに進むときは「支払いに進む」と言ってください。支払い方法の選択やポイント利用（例：「500ポイント使う」）もここで行えます。<break time="0.6s"/>` +
+            `7. 注文の最終確認と確定。注文内容を確認するには「注文を確認して」、確定するには「注文を確定する」と言ってください。<break time="0.4s"/>` +
+            `必要なら、操作手順を順を追って案内します。どれを試しますか？` +
+            `</speak>`;
 
         return handlerInput.responseBuilder
             .speak(speakOutput)
-            .reprompt(speakOutput)
+            .reprompt('何を試しますか？例えば「りんごを探して」や「カートを見せて」と言ってください。')
             .getResponse();
     }
 };
@@ -68,7 +96,7 @@ const CancelAndStopIntentHandler = {
     },
     handle(handlerInput) {
         console.log('CancelOrStopIntent invoked');
-        const speakOutput = 'Goodbye!';
+        const speakOutput = 'ご利用ありがとうございました。またのご来店をお待ちしております。';
 
         return handlerInput.responseBuilder
             .speak(speakOutput)
@@ -87,7 +115,7 @@ const FallbackIntentHandler = {
     },
     handle(handlerInput) {
         console.log('FallbackIntent invoked');
-        const speakOutput = 'Sorry, I don\'t know about that. Please try again.';
+        const speakOutput = '申し訳ありません。そのリクエストはよく分かりませんでした。もう一度お願いできますか？';
 
         return handlerInput.responseBuilder
             .speak(speakOutput)
@@ -122,7 +150,7 @@ const IntentReflectorHandler = {
     handle(handlerInput) {
         console.log('IntentReflector invoked');
         const intentName = Alexa.getIntentName(handlerInput.requestEnvelope);
-        const speakOutput = `You just triggered ${intentName}`;
+        const speakOutput = `「${intentName}」というインテントを受け取りました。`;
 
         return handlerInput.responseBuilder
             .speak(speakOutput)
@@ -130,7 +158,7 @@ const IntentReflectorHandler = {
             .getResponse();
     }
 };
-/**
+/* *
  * Generic error handling to capture any syntax or routing errors. If you receive an error
  * stating the request handler chain is not found, you have not implemented a handler for
  * the intent being invoked or included it in the skill builder below 
@@ -140,7 +168,7 @@ const ErrorHandler = {
         return true;
     },
     handle(handlerInput, error) {
-        const speakOutput = 'Sorry, I had trouble doing what you asked. Please try again.';
+        const speakOutput = '申し訳ありません。リクエストを処理できませんでした。もう一度お試しください。';
         console.log(`~~~~ Error handled: ${JSON.stringify(error)}`);
 
         return handlerInput.responseBuilder
@@ -198,8 +226,7 @@ const SaveCartInterceptor = {
             // 只有在必要时才写入（脏标记或内容变化）
             const existingCartData = persistentAttributes.cartData || null;
             if (CartPersistenceHelper.shouldSave(sessionAttributes, existingCartData)) {
-                const newCartData = CartPersistenceHelper.buildCartData(sessionAttributes);
-                persistentAttributes.cartData = newCartData;
+                persistentAttributes.cartData = CartPersistenceHelper.buildCartData(sessionAttributes);
                 // other persistent fields
                 if (sessionAttributes.lastSearchResults) persistentAttributes.lastSearchResults = sessionAttributes.lastSearchResults;
                 if (sessionAttributes.lastSearchQuery) persistentAttributes.lastSearchQuery = sessionAttributes.lastSearchQuery;

@@ -90,7 +90,7 @@ module.exports = {
 
     // Compute interim summary
     const computed = await PaymentService.computeFinalAmounts(attributesManager, sessionAttributes);
-    const speak = `${points}ポイントを使用します。現在の支払合計は${computed.totalAfterPoints}円です。株主優待カードを利用しますか？ はい、またはいいえでお答えください。`;
-    return handlerInput.responseBuilder.speak(speak).reprompt('株主優待カードを利用しますか？').getResponse();
+    const speak = `${points}ポイントを使用します。現在の支払合計は${computed.totalAfterPoints}円です。オーナーズカードを利用しますか？ はい、またはいいえでお答えください。`;
+    return handlerInput.responseBuilder.speak(speak).reprompt('オーナーズカードを利用しますか？').getResponse();
   }
 };
