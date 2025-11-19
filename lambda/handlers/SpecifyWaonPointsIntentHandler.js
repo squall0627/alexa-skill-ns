@@ -16,7 +16,7 @@ module.exports = {
     const requestEnvelope = handlerInput.requestEnvelope;
     const intent = requestEnvelope.request.intent || { slots: {} };
     const slots = intent.slots || {};
-    const rawValue = (slots.Points && slots.Points.value) || (slots.Number && slots.Number.value) || null;
+    const rawValue = slots.Points && (slots.Points.value || (slots.Points.resolutions && slots.Points.resolutions.resolutionsPerAuthority && slots.Points.resolutions.resolutionsPerAuthority[0] && slots.Points.resolutions.resolutionsPerAuthority[0].values && slots.Points.resolutions.resolutionsPerAuthority[0].values[0] && slots.Points.resolutions.resolutionsPerAuthority[0].values[0].value && slots.Points.resolutions.resolutionsPerAuthority[0].values[0].value.name));
     // Fallback: if slot not populated, try the raw input transcript (ASR) which sometimes contains the text
     const inputTranscript = requestEnvelope.request && requestEnvelope.request.inputTranscript ? requestEnvelope.request.inputTranscript : null;
     const effectiveRaw = rawValue || inputTranscript;
