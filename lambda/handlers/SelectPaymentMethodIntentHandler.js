@@ -50,7 +50,7 @@ module.exports = {
     sessionAttributes.pending = true;
     sessionAttributes.pendingData = { kind: 'confirmShareholderCard' };
     attributesManager.setSessionAttributes(sessionAttributes);
-    const speak = `支払い方法を${selected.label}に設定しました。株主優待カードをお持ちですか？ はい、またはいいえでお答えください。`;
-    return handlerInput.responseBuilder.speak(speak).reprompt('株主優待カードをお持ちですか？').getResponse();
+    const speak = `支払い方法を${selected.label}に設定しました。オーナーズカードをお持ちですか？ はい、またはいいえでお答えください。`;
+    return handlerInput.responseBuilder.speak(speak).reprompt('オーナーズカードをお持ちですか？').getResponse();
   }
 };

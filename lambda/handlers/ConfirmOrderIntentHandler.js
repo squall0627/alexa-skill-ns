@@ -1,4 +1,3 @@
-// ...new file...
 // lambda/handlers/ConfirmOrderIntentHandler.js
 const Alexa = require('ask-sdk-core');
 const PaymentService = require('../services/PaymentService');
@@ -7,9 +6,8 @@ module.exports = {
   canHandle(handlerInput) {
     const request = handlerInput.requestEnvelope;
     const intentName = Alexa.getIntentName(request);
-    const sessionAttributes = handlerInput.attributesManager.getSessionAttributes() || {};
     // Accept explicit ConfirmOrderIntent or when lastAction was set to 'ConfirmOrderIntent'
-    return Alexa.getRequestType(request) === 'IntentRequest' && intentName === 'ConfirmOrderIntent' && sessionAttributes.lastAction === 'ConfirmOrderIntent';
+    return Alexa.getRequestType(request) === 'IntentRequest' && intentName === 'ConfirmOrderIntent';
   },
 
   async handle(handlerInput) {
@@ -23,14 +21,26 @@ module.exports = {
       return handlerInput.responseBuilder.speak(speak).reprompt('ほかに何をしますか？').getResponse();
     }
 
-    const itemsText = cart.map((it, i) => `番号${i + 1}、${it.name || it.title || '商品'}、${it.quantity || 1}個、単価${it.price || it.unitPrice || 0}円`).join('。 ');
+    const itemsText = cart.map((it, i) => {
+      // Determine actual selling unit price: prefer promoPrice when it's lower than base price
+      const basePrice = it.price || it.unitPrice || 0;
+      const unitPrice = (typeof it.promoPrice === 'number' && it.promoPrice < basePrice) ? it.promoPrice : basePrice;
+      return `番号${i + 1}、${it.name || it.title || '商品'}、${it.quantity || 1}個、単価${unitPrice}円`;
+    }).join('。 ');
 
-    const delivery = sessionAttributes.cartDelivery ? sessionAttributes.cartDelivery.spokenLabel : (sessionAttributes.cartDeliveryAddress ? sessionAttributes.cartDeliveryAddress.spokenLabel : '未設定の配送');
+    // Build delivery text from both cartDelivery and cartDeliveryAddress when available
+    const cartDelivery = sessionAttributes.cartDelivery;
+    const cartDeliveryAddress = sessionAttributes.cartDeliveryAddress;
+    // Compose explicit, labeled delivery text with per-field unset checks
+    const deliveryMethodLabel = (cartDelivery && cartDelivery.spokenLabel) ? cartDelivery.spokenLabel : '未設定';
+    const deliveryAddressLabel = (cartDeliveryAddress && cartDeliveryAddress.spokenLabel) ? cartDeliveryAddress.spokenLabel : '未設定';
+    const delivery = `配送便：${deliveryMethodLabel}。届け先：${deliveryAddressLabel}`;
+
     const promo = sessionAttributes.appliedPromo ? sessionAttributes.appliedPromo.name : 'クーポン未使用';
     const paymentFlow = sessionAttributes.paymentFlow || {};
     const methodLabel = (paymentFlow.method === 'cash' && '現金') || (paymentFlow.method === 'credit' && 'クレジットカード') || (paymentFlow.method === 'aeon' && 'イオンペイ') || '未設定';
     const waonUse = paymentFlow.useWaon ? `WAONポイントを${paymentFlow.waonPoints || 0}ポイント使用` : 'WAONポイント未使用';
-    const share = paymentFlow.useShareholderCard ? '株主優待カードを使用' : '株主優待カード未使用';
+    const share = paymentFlow.useShareholderCard ? 'オーナーズカードを使用' : 'オーナーズカード未使用';
 
     const computed = await PaymentService.computeFinalAmounts(attributesManager, sessionAttributes);
 
@@ -46,4 +56,3 @@ module.exports = {
     return handlerInput.responseBuilder.speak(speak).reprompt('注文を確定してよろしいですか？ はい／いいえでお答えください。').getResponse();
   }
 };
-

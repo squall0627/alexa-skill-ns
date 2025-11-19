@@ -125,8 +125,8 @@ module.exports = {
         sessionAttributes.pending = true;
         sessionAttributes.pendingData = { kind: 'confirmShareholderCard' };
         attributesManager.setSessionAttributes(sessionAttributes);
-        const speak = 'WAONポイントは使用しません。株主優待カードをお持ちですか？ はい、またはいいえでお答えください。';
-        return handlerInput.responseBuilder.speak(speak).reprompt('株主優待カードを使いますか？').getResponse();
+        const speak = 'WAONポイントは使用しません。オーナーズカードをお持ちですか？ はい、またはいいえでお答えください。';
+        return handlerInput.responseBuilder.speak(speak).reprompt('オーナーズカードを使いますか？').getResponse();
       }
     }
 
