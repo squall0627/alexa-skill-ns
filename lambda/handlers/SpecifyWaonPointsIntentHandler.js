@@ -16,13 +16,20 @@ module.exports = {
     const requestEnvelope = handlerInput.requestEnvelope;
     const intent = requestEnvelope.request.intent || { slots: {} };
     const slots = intent.slots || {};
-    const rawValue = slots.Points && (slots.Points.value || (slots.Points.resolutions && slots.Points.resolutions.resolutionsPerAuthority && slots.Points.resolutions.resolutionsPerAuthority[0] && slots.Points.resolutions.resolutionsPerAuthority[0].values && slots.Points.resolutions.resolutionsPerAuthority[0].values[0] && slots.Points.resolutions.resolutionsPerAuthority[0].values[0].value && slots.Points.resolutions.resolutionsPerAuthority[0].values[0].value.name));
+    const rawValue = (slots.Points && (slots.Points.value || (slots.Points.resolutions && slots.Points.resolutions.resolutionsPerAuthority && slots.Points.resolutions.resolutionsPerAuthority[0] && slots.Points.resolutions.resolutionsPerAuthority[0].values && slots.Points.resolutions.resolutionsPerAuthority[0].values[0] && slots.Points.resolutions.resolutionsPerAuthority[0].values[0].value && slots.Points.resolutions.resolutionsPerAuthority[0].values[0].value.name))) || (slots.Number && slots.Number.value) || null;
     // Fallback: if slot not populated, try the raw input transcript (ASR) which sometimes contains the text
     const inputTranscript = requestEnvelope.request && requestEnvelope.request.inputTranscript ? requestEnvelope.request.inputTranscript : null;
     const effectiveRaw = rawValue || inputTranscript;
 
     const attributesManager = handlerInput.attributesManager;
     const sessionAttributes = attributesManager.getSessionAttributes() || {};
+
+    // Debug: log slots and transcript to help diagnose parsing issues (remove in production)
+    try {
+      console.log('[SpecifyWaonPoints] slots:', JSON.stringify(slots));
+      console.log('[SpecifyWaonPoints] rawValue:', rawValue);
+      console.log('[SpecifyWaonPoints] inputTranscript:', inputTranscript);
+    } catch (e) { /* ignore logging errors */ }
 
     // helper: convert full-width digits to half-width
     function toHalfWidth(str) {
