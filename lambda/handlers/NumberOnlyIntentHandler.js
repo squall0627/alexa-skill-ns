@@ -9,6 +9,8 @@ const SelectDeliverySlotIntentHandler = require('./SelectDeliverySlotIntentHandl
 const SelectPromotionIntentHandler = require('./SelectPromotionIntentHandler');
 const AddCartIntentHandler = require('./AddCartIntentHandler');
 const SelectDeliveryAddressIntentHandler = require('./SelectDeliveryAddressIntentHandler');
+const SelectPaymentMethodIntentHandler = require('./SelectPaymentMethodIntentHandler');
+const SpecifyWaonPointsIntentHandler = require('./SpecifyWaonPointsIntentHandler');
 
 module.exports = {
   canHandle(handlerInput) {
@@ -31,7 +33,11 @@ module.exports = {
       'DeleteCartIntent',
       'SearchAvailableDeliverySlotIntent',
       'SearchAvailablePromotionIntent',
-      'SearchAvailableDeliveryAddressIntent'
+      'SearchAvailableDeliveryAddressIntent',
+      // payment-related
+      'StartPaymentIntent',
+      'SelectPaymentMethodIntent',
+      'SpecifyWaonPointsIntent'
     ];
     return followUps.includes(sessionAttributes.lastAction);
   },
@@ -96,6 +102,23 @@ module.exports = {
         cloneRequestEnvelope.request.intent.slots = { AddressNumber: { name: 'AddressNumber', value: numberValue } };
         const fakeHandlerInput = Object.assign({}, handlerInput, { requestEnvelope: cloneRequestEnvelope });
         return await SelectDeliveryAddressIntentHandler.handle(fakeHandlerInput);
+      }
+
+      // Payment-related numeric routing
+      if (lastAction === 'StartPaymentIntent') {
+        // Number corresponds to payment method selection
+        cloneRequestEnvelope.request.intent.name = 'SelectPaymentMethodIntent';
+        cloneRequestEnvelope.request.intent.slots = { PaymentNumber: { name: 'PaymentNumber', value: numberValue } };
+        const fakeHandlerInput = Object.assign({}, handlerInput, { requestEnvelope: cloneRequestEnvelope });
+        return await SelectPaymentMethodIntentHandler.handle(fakeHandlerInput);
+      }
+
+      if (lastAction === 'SpecifyWaonPointsIntent' || lastAction === 'SelectPaymentMethodIntent') {
+        // Map number -> points
+        cloneRequestEnvelope.request.intent.name = 'SpecifyWaonPointsIntent';
+        cloneRequestEnvelope.request.intent.slots = { Points: { name: 'Points', value: numberValue } };
+        const fakeHandlerInput = Object.assign({}, handlerInput, { requestEnvelope: cloneRequestEnvelope });
+        return await SpecifyWaonPointsIntentHandler.handle(fakeHandlerInput);
       }
 
       // Fallback: let the IntentReflector or normal chain handle it

@@ -193,6 +193,37 @@
         {
           "name": "AMAZON.NoIntent",
           "samples": []
+        },
+        {
+          "name": "StartPaymentIntent",
+          "slots": [],
+          "samples": [
+            "支払いに進む",
+            "このまま支払いをする",
+            "支払い方法を選びたい"
+          ]
+        },
+        {
+          "name": "SpecifyWaonPointsIntent",
+          "slots": [
+            { "name": "Points", "type": "AMAZON.NUMBER" }
+          ],
+          "samples": [
+            "{Points} ポイント使います",
+            "{Points} ポイント使用",
+            "{Points} を使ってください",
+            "{Points} ポイント"
+          ]
+        },
+        {
+          "name": "ConfirmOrderIntent",
+          "slots": [],
+          "samples": [
+            "注文を確認して",
+            "注文内容を確認して",
+            "最終確認して",
+            "注文を確定する"
+          ]
         }
       ],
       "types": [],

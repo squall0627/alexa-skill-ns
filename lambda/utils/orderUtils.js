@@ -22,6 +22,9 @@ async function stopOrder(attributesManager) {
   delete sessionAttributes.lastAdded;
   // clear lastAction and any generic pending state
   delete sessionAttributes.lastAction;
+  // 清理支付/结算相关的 session 字段
+  delete sessionAttributes.paymentFlow; // { method, useWaon, waonPoints, useShareholderCard, status }
+  delete sessionAttributes.lastPaymentResult; // 最后一次支付结果
   sessionAttributes._cartDirty = true;
   delete sessionAttributes.pending;
   delete sessionAttributes.pendingData;
@@ -38,6 +41,9 @@ function clearCartSession(attributesManager) {
   delete sessionAttributes.availablePromos;
   delete sessionAttributes.appliedPromo;
   delete sessionAttributes.lastAdded;
+  // 清理支付相关会话数据（カートだけをクリアするときにも残っていると問題になることがある）
+  delete sessionAttributes.paymentFlow;
+  delete sessionAttributes.lastPaymentResult;
   // clear lastAction and generic pending
   delete sessionAttributes.lastAction;
   sessionAttributes._cartDirty = true;
@@ -48,7 +54,17 @@ function clearCartSession(attributesManager) {
   attributesManager.setSessionAttributes(sessionAttributes);
 }
 
+/**
+ * 注文確定後の共通後処理
+ * 支払い成功時に呼び出して、関連するセッション・永続化データをクリアする
+ */
+async function finalizeOrderSuccess(attributesManager) {
+  // 将来ここで orderHistory への追記やレシート保存などを行った後、セッションをクリア
+  await stopOrder(attributesManager);
+}
+
 module.exports = {
   stopOrder,
   clearCartSession,
+  finalizeOrderSuccess,
 };

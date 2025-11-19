@@ -24,6 +24,10 @@ const StopOrderHandler = require('./handlers/StopOrderHandler');
 const NumberOnlyIntentHandler = require('./handlers/NumberOnlyIntentHandler');
 const SearchAvailableDeliveryAddressIntentHandler = require('./handlers/SearchAvailableDeliveryAddressIntentHandler');
 const SelectDeliveryAddressIntentHandler = require('./handlers/SelectDeliveryAddressIntentHandler');
+const StartPaymentIntentHandler = require('./handlers/StartPaymentIntentHandler');
+const SelectPaymentMethodIntentHandler = require('./handlers/SelectPaymentMethodIntentHandler');
+const SpecifyWaonPointsIntentHandler = require('./handlers/SpecifyWaonPointsIntentHandler');
+const ConfirmOrderIntentHandler = require('./handlers/ConfirmOrderIntentHandler');
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
@@ -246,6 +250,10 @@ exports.handler = Alexa.SkillBuilders.custom()
         SelectDeliveryAddressIntentHandler,
         SearchAvailablePromotionIntentHandler,
         SelectPromotionIntentHandler,
+        StartPaymentIntentHandler,
+        SelectPaymentMethodIntentHandler,
+        SpecifyWaonPointsIntentHandler,
+        ConfirmOrderIntentHandler,
         StopOrderHandler,
         NumberOnlyIntentHandler,
         IntentReflectorHandler)

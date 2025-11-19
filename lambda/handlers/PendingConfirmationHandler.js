@@ -2,6 +2,7 @@
 // 日本語：降級確認（pendingClearCart / pendingCancelOrder）時に Yes/No を処理するハンドラ
 const Alexa = require('ask-sdk-core');
 const DeliveryAddressService = require('../services/DeliveryAddressService');
+const PaymentService = require('../services/PaymentService');
 
 module.exports = {
   canHandle(handlerInput) {
@@ -12,7 +13,15 @@ module.exports = {
     const sessionAttributes = handlerInput.attributesManager.getSessionAttributes() || {};
     // handle only when generic pending flag is set and lastAction indicates a confirmation-type intent
     const pendingData = sessionAttributes.pendingData || {};
-    return Boolean(sessionAttributes.pending && ((sessionAttributes.lastAction === 'ClearCartIntent' && pendingData.kind === 'clearCart') || (sessionAttributes.lastAction === 'StopOrderIntent' && pendingData.kind === 'stopOrder') || (sessionAttributes.lastAction === 'SearchAvailableDeliveryAddressIntent' && pendingData.kind === 'confirmDefaultAddress')));
+    return Boolean(sessionAttributes.pending && (
+      (sessionAttributes.lastAction === 'ClearCartIntent' && pendingData.kind === 'clearCart') ||
+      (sessionAttributes.lastAction === 'StopOrderIntent' && pendingData.kind === 'stopOrder') ||
+      (sessionAttributes.lastAction === 'SearchAvailableDeliveryAddressIntent' && pendingData.kind === 'confirmDefaultAddress') ||
+      // payment-related pending kinds
+      pendingData.kind === 'confirmUseWaon' ||
+      pendingData.kind === 'confirmShareholderCard' ||
+      pendingData.kind === 'confirmFinalizePayment'
+    ));
   },
   async handle(handlerInput) {
     const request = handlerInput.requestEnvelope;
@@ -89,6 +98,85 @@ module.exports = {
         attributesManager.setSessionAttributes(sessionAttributes);
         const speak = '配送先の設定をキャンセルしました。ほかに何をしますか？';
         return handlerInput.responseBuilder.speak(speak).reprompt('ほかに何をしますか？').getResponse();
+      }
+    }
+
+    // Payment-related pending: confirmUseWaon
+    if (sessionAttributes.pending && pendingData.kind === 'confirmUseWaon') {
+      // clear generic pending flag
+      delete sessionAttributes.pending;
+      delete sessionAttributes.pendingData;
+
+      // ensure paymentFlow exists
+      sessionAttributes.paymentFlow = sessionAttributes.paymentFlow || {};
+
+      if (isYes) {
+        // user wants to use WAON points -> ask how many
+        sessionAttributes.paymentFlow.useWaon = true;
+        sessionAttributes.lastAction = 'SpecifyWaonPointsIntent';
+        attributesManager.setSessionAttributes(sessionAttributes);
+        const balance = await PaymentService.getWaonBalance(attributesManager);
+        const speak = `ご利用可能なWAONポイントは${balance}ポイントです。何ポイント使いますか？ 数字で教えてください。`;
+        return handlerInput.responseBuilder.speak(speak).reprompt('何ポイント使いますか？').getResponse();
+      } else {
+        // No -> skip points and ask shareholder card
+        sessionAttributes.paymentFlow.useWaon = false;
+        sessionAttributes.paymentFlow.waonPoints = 0;
+        sessionAttributes.pending = true;
+        sessionAttributes.pendingData = { kind: 'confirmShareholderCard' };
+        attributesManager.setSessionAttributes(sessionAttributes);
+        const speak = 'WAONポイントは使用しません。株主優待カードをお持ちですか？ はい、またはいいえでお答えください。';
+        return handlerInput.responseBuilder.speak(speak).reprompt('株主優待カードを使いますか？').getResponse();
+      }
+    }
+
+    // Payment-related pending: confirmShareholderCard
+    if (sessionAttributes.pending && pendingData.kind === 'confirmShareholderCard') {
+      // clear generic pending flag
+      delete sessionAttributes.pending;
+      delete sessionAttributes.pendingData;
+
+      sessionAttributes.paymentFlow = sessionAttributes.paymentFlow || {};
+      sessionAttributes.paymentFlow.useShareholderCard = isYes;
+
+      // After shareholder card decision, compute final amounts and ask final confirmation
+      attributesManager.setSessionAttributes(sessionAttributes);
+      // Delegate to ConfirmOrderIntentHandler to present the full order summary
+      const ConfirmOrderIntentHandler = require('./ConfirmOrderIntentHandler');
+      // set lastAction so ConfirmOrderIntentHandler can pick up
+      sessionAttributes.lastAction = 'ConfirmOrderIntent';
+      attributesManager.setSessionAttributes(sessionAttributes);
+      // call the ConfirmOrder handler to build and speak the summary
+      const fakeHandlerInput = Object.assign({}, handlerInput);
+      return await ConfirmOrderIntentHandler.handle(fakeHandlerInput);
+    }
+
+    // Payment-related pending: confirmFinalizePayment
+    if (sessionAttributes.pending && pendingData.kind === 'confirmFinalizePayment') {
+      // clear pending
+      delete sessionAttributes.pending;
+      delete sessionAttributes.pendingData;
+
+      if (isYes) {
+        // perform payment
+        attributesManager.setSessionAttributes(sessionAttributes);
+        const paymentResult = await PaymentService.createPayment(attributesManager, sessionAttributes);
+        if (paymentResult && paymentResult.success) {
+          // finalize order: clear session and persistent order info
+          const orderUtils = require('../utils/orderUtils');
+          await orderUtils.finalizeOrderSuccess(attributesManager);
+          const speak = `ご注文とお支払いを確定しました。お支払い金額は${paymentResult.totalAfterPoints}円、今回の返点は${paymentResult.rewardPoints}点です。ありがとうございました。`;
+          return handlerInput.responseBuilder.speak(speak).getResponse();
+        } else {
+          attributesManager.setSessionAttributes(sessionAttributes);
+          const speak = '申し訳ありません。支払い処理で問題が発生しました。もう一度お試しください。';
+          return handlerInput.responseBuilder.speak(speak).reprompt('もう一度お試しになりますか？').getResponse();
+        }
+      } else {
+        // user cancelled final confirmation
+        attributesManager.setSessionAttributes(sessionAttributes);
+        const speak = '注文を確定しませんでした。ほかに変更したい点はありますか？';
+        return handlerInput.responseBuilder.speak(speak).reprompt('ほかに変更したい点はありますか？').getResponse();
       }
     }
 
