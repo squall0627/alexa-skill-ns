@@ -33,6 +33,8 @@ module.exports = {
 
       const selected = availablePromos[choice - 1];
       sessionAttributes.appliedPromo = selected;
+      // mark cart/session as dirty so persistence layer saves the applied promo
+      sessionAttributes._cartDirty = true;
       attributesManager.setSessionAttributes(sessionAttributes);
 
       // 適用後の最終金額を計算してユーザーに伝える

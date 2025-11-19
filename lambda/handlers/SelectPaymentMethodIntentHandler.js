@@ -34,6 +34,8 @@ module.exports = {
       sessionAttributes.paymentFlow = sessionAttributes.paymentFlow || {};
       sessionAttributes.paymentFlow.method = selected.id;
       sessionAttributes.paymentFlow.status = 'methodSelected';
+      // mark dirty so payment method selection is persisted
+      sessionAttributes._cartDirty = true;
       sessionAttributes.lastAction = 'SelectPaymentMethodIntent';
       attributesManager.setSessionAttributes(sessionAttributes);
 
@@ -43,6 +45,8 @@ module.exports = {
       if (balance > 0) {
           sessionAttributes.pending = true;
           sessionAttributes.pendingData = { kind: 'confirmUseWaon' };
+          // paymentFlow modified (pending next), keep dirty
+          sessionAttributes._cartDirty = true;
           attributesManager.setSessionAttributes(sessionAttributes);
           const speak = `WAONポイントの残高は${balance}ポイントあります。WAONポイントを利用しますか？ はい、またはいいえでお答えください。`;
           return handlerInput.responseBuilder.speak(speak).reprompt('WAONポイントを利用しますか？').getResponse();
@@ -51,6 +55,7 @@ module.exports = {
       // Otherwise ask about shareholder card next
       sessionAttributes.pending = true;
       sessionAttributes.pendingData = { kind: 'confirmShareholderCard' };
+      sessionAttributes._cartDirty = true;
       attributesManager.setSessionAttributes(sessionAttributes);
       const speak = `支払い方法を${selected.label}に設定しました。オーナーズカードをお持ちですか？ はい、またはいいえでお答えください。`;
       return handlerInput.responseBuilder.speak(speak).reprompt('オーナーズカードをお持ちですか？').getResponse();

@@ -26,6 +26,8 @@ module.exports = {
         waonPoints: null,
         useShareholderCard: null
       };
+      // new paymentFlow initialized - mark dirty to persist
+      sessionAttributes._cartDirty = true;
 
       // lastAction used by NumberOnlyIntentHandler to route numeric replies
       sessionAttributes.lastAction = 'StartPaymentIntent';

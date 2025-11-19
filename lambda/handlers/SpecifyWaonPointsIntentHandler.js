@@ -83,6 +83,8 @@ module.exports = {
       sessionAttributes.paymentFlow = sessionAttributes.paymentFlow || {};
       sessionAttributes.paymentFlow.useWaon = true;
       sessionAttributes.paymentFlow.waonPoints = points;
+      // mark dirty so waon points selection is persisted
+      sessionAttributes._cartDirty = true;
       sessionAttributes.lastAction = 'SpecifyWaonPointsIntent';
 
       // After points specified, ask about shareholder card

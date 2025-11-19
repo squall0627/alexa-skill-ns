@@ -31,5 +31,16 @@ describe('CartPersistenceHelper', () => {
     const persistent = { cart: [{ id: 1 }], cartDelivery: { id: 'slot' } };
     expect(CartPersistenceHelper.shouldSave(sessionAttrs, persistent)).toBe(false);
   });
-});
 
+  test('should treat null and undefined as equal for simple fields', () => {
+    const sessionAttrs = { cart: [{ id: 1 }], paymentFlow: { method: undefined } };
+    const persistent = { cart: [{ id: 1 }], paymentFlow: { method: null } };
+    expect(CartPersistenceHelper.shouldSave(sessionAttrs, persistent)).toBe(false);
+  });
+
+  test('should treat missing nested numeric field undefined equal to null', () => {
+    const sessionAttrs = { cart: [{ id: 1 }], paymentFlow: { /* waonPoints missing */ } };
+    const persistent = { cart: [{ id: 1 }], paymentFlow: { waonPoints: null } };
+    expect(CartPersistenceHelper.shouldSave(sessionAttrs, persistent)).toBe(false);
+  });
+});

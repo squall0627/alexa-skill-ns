@@ -124,6 +124,8 @@ module.exports = {
           // No -> skip points and ask shareholder card
           sessionAttributes.paymentFlow.useWaon = false;
           sessionAttributes.paymentFlow.waonPoints = 0;
+          // mark dirty because paymentFlow changed
+          sessionAttributes._cartDirty = true;
           sessionAttributes.pending = true;
           sessionAttributes.pendingData = { kind: 'confirmShareholderCard' };
           attributesManager.setSessionAttributes(sessionAttributes);
@@ -140,6 +142,8 @@ module.exports = {
 
         sessionAttributes.paymentFlow = sessionAttributes.paymentFlow || {};
         sessionAttributes.paymentFlow.useShareholderCard = isYes;
+        // mark dirty so shareholder card decision is persisted
+        sessionAttributes._cartDirty = true;
 
         // After shareholder card decision, compute final amounts and ask final confirmation
         attributesManager.setSessionAttributes(sessionAttributes);
