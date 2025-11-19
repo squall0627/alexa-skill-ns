@@ -11,48 +11,53 @@ module.exports = {
   },
 
   async handle(handlerInput) {
-    const attributesManager = handlerInput.attributesManager;
-    const sessionAttributes = attributesManager.getSessionAttributes() || {};
+    console.log('Start handling ConfirmOrderIntentHandler');
+    try {
+      const attributesManager = handlerInput.attributesManager;
+      const sessionAttributes = attributesManager.getSessionAttributes() || {};
 
-    // Build a readable order summary in Japanese
-    const cart = sessionAttributes.cart || [];
-    if (!Array.isArray(cart) || cart.length === 0) {
-      const speak = 'カートに商品がありません。注文を確定できません。ほかに何をしますか？';
-      return handlerInput.responseBuilder.speak(speak).reprompt('ほかに何をしますか？').getResponse();
+      // Build a readable order summary in Japanese
+      const cart = sessionAttributes.cart || [];
+      if (!Array.isArray(cart) || cart.length === 0) {
+        const speak = 'カートに商品がありません。注文を確定できません。ほかに何をしますか？';
+        return handlerInput.responseBuilder.speak(speak).reprompt('ほかに何をしますか？').getResponse();
+      }
+
+      const itemsText = cart.map((it, i) => {
+        // Determine actual selling unit price: prefer promoPrice when it's lower than base price
+        const basePrice = it.price || it.unitPrice || 0;
+        const unitPrice = (typeof it.promoPrice === 'number' && it.promoPrice < basePrice) ? it.promoPrice : basePrice;
+        return `番号${i + 1}、${it.name || it.title || '商品'}、${it.quantity || 1}個、単価${unitPrice}円`;
+      }).join('。 ');
+
+      // Build delivery text from both cartDelivery and cartDeliveryAddress when available
+      const cartDelivery = sessionAttributes.cartDelivery;
+      const cartDeliveryAddress = sessionAttributes.cartDeliveryAddress;
+      // Compose explicit, labeled delivery text with per-field unset checks
+      const deliveryMethodLabel = (cartDelivery && cartDelivery.spokenLabel) ? cartDelivery.spokenLabel : '未設定';
+      const deliveryAddressLabel = (cartDeliveryAddress && cartDeliveryAddress.spokenLabel) ? cartDeliveryAddress.spokenLabel : '未設定';
+      const delivery = `配送便：${deliveryMethodLabel}。届け先：${deliveryAddressLabel}`;
+
+      const promo = sessionAttributes.appliedPromo ? sessionAttributes.appliedPromo.name : 'クーポン未使用';
+      const paymentFlow = sessionAttributes.paymentFlow || {};
+      const methodLabel = (paymentFlow.method === 'cash' && '現金') || (paymentFlow.method === 'credit' && 'クレジットカード') || (paymentFlow.method === 'aeon' && 'イオンペイ') || '未設定';
+      const waonUse = paymentFlow.useWaon ? `WAONポイントを${paymentFlow.waonPoints || 0}ポイント使用` : 'WAONポイント未使用';
+      const share = paymentFlow.useShareholderCard ? 'オーナーズカードを使用' : 'オーナーズカード未使用';
+
+      const computed = await PaymentService.computeFinalAmounts(attributesManager, sessionAttributes);
+
+      // Assemble full summary
+      const speak = `ご注文の確認です。商品：${itemsText}。配達：${delivery}。クーポン：${promo}。お支払い方法：${methodLabel}。${waonUse}。${share}。${computed.summary} 注文を確定してよろしいですか？`;
+
+      // set pending for final confirmation handled by PendingConfirmationHandler
+      sessionAttributes.pending = true;
+      sessionAttributes.pendingData = { kind: 'confirmFinalizePayment' };
+      sessionAttributes.lastAction = 'ConfirmOrderIntent';
+      attributesManager.setSessionAttributes(sessionAttributes);
+
+      return handlerInput.responseBuilder.speak(speak).reprompt('注文を確定してよろしいですか？ はい／いいえでお答えください。').getResponse();
+    } finally {
+      console.log('End handling ConfirmOrderIntentHandler');
     }
-
-    const itemsText = cart.map((it, i) => {
-      // Determine actual selling unit price: prefer promoPrice when it's lower than base price
-      const basePrice = it.price || it.unitPrice || 0;
-      const unitPrice = (typeof it.promoPrice === 'number' && it.promoPrice < basePrice) ? it.promoPrice : basePrice;
-      return `番号${i + 1}、${it.name || it.title || '商品'}、${it.quantity || 1}個、単価${unitPrice}円`;
-    }).join('。 ');
-
-    // Build delivery text from both cartDelivery and cartDeliveryAddress when available
-    const cartDelivery = sessionAttributes.cartDelivery;
-    const cartDeliveryAddress = sessionAttributes.cartDeliveryAddress;
-    // Compose explicit, labeled delivery text with per-field unset checks
-    const deliveryMethodLabel = (cartDelivery && cartDelivery.spokenLabel) ? cartDelivery.spokenLabel : '未設定';
-    const deliveryAddressLabel = (cartDeliveryAddress && cartDeliveryAddress.spokenLabel) ? cartDeliveryAddress.spokenLabel : '未設定';
-    const delivery = `配送便：${deliveryMethodLabel}。届け先：${deliveryAddressLabel}`;
-
-    const promo = sessionAttributes.appliedPromo ? sessionAttributes.appliedPromo.name : 'クーポン未使用';
-    const paymentFlow = sessionAttributes.paymentFlow || {};
-    const methodLabel = (paymentFlow.method === 'cash' && '現金') || (paymentFlow.method === 'credit' && 'クレジットカード') || (paymentFlow.method === 'aeon' && 'イオンペイ') || '未設定';
-    const waonUse = paymentFlow.useWaon ? `WAONポイントを${paymentFlow.waonPoints || 0}ポイント使用` : 'WAONポイント未使用';
-    const share = paymentFlow.useShareholderCard ? 'オーナーズカードを使用' : 'オーナーズカード未使用';
-
-    const computed = await PaymentService.computeFinalAmounts(attributesManager, sessionAttributes);
-
-    // Assemble full summary
-    const speak = `ご注文の確認です。商品：${itemsText}。配達：${delivery}。クーポン：${promo}。お支払い方法：${methodLabel}。${waonUse}。${share}。${computed.summary} 注文を確定してよろしいですか？`;
-
-    // set pending for final confirmation handled by PendingConfirmationHandler
-    sessionAttributes.pending = true;
-    sessionAttributes.pendingData = { kind: 'confirmFinalizePayment' };
-    sessionAttributes.lastAction = 'ConfirmOrderIntent';
-    attributesManager.setSessionAttributes(sessionAttributes);
-
-    return handlerInput.responseBuilder.speak(speak).reprompt('注文を確定してよろしいですか？ はい／いいえでお答えください。').getResponse();
   }
 };

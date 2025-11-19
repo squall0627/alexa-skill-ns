@@ -7,6 +7,11 @@ module.exports = {
     return false;
   },
   handle() {
-    throw new Error('CancelOrderHandler is deprecated; use StopOrderHandler instead.');
+    console.log('Start handling CancelOrderHandler');
+    try {
+      throw new Error('CancelOrderHandler is deprecated; use StopOrderHandler instead.');
+    } finally {
+      console.log('End handling CancelOrderHandler');
+    }
   }
 };
