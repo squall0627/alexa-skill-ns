@@ -52,7 +52,7 @@ module.exports = {
       sessionAttributes.pendingData = { kind: 'confirmProceedToPayment' };
       attributesManager.setSessionAttributes(sessionAttributes);
 
-      const spoken = `${selected.name}を適用しました。${final.summary} お支払いに進みますか？ はいでお支払いに進みます、いいえの場合はほかに何をしますかと教えてください。`;
+      const spoken = `${selected.name}を適用しました。${final.summary} お支払いに進みますか？ はい、でお支払いに進みます、いいえ、の場合はほかに何をしますかと教えてください。`;
       const reprompt = 'お支払いに進みますか？ はい、またはいいえでお答えください。';
       return handlerInput.responseBuilder.speak(spoken).reprompt(reprompt).getResponse();
     } finally {

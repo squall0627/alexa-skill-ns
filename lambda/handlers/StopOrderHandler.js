@@ -24,13 +24,19 @@ module.exports = {
 
       if (confirmationStatus === 'CONFIRMED') {
         await orderUtils.stopOrder(attributesManager);
-        const speak = '今回のご購入を中止しました。必要な場合はまた最初からご注文ください。';
-        return handlerInput.responseBuilder.speak(speak).getResponse();
+        const plain = '今回のご購入を中止しました。必要な場合はまた最初からご注文ください。';
+        const ssml = `<speak>今回のご購入を中止しました。必要な場合はまた最初からご注文ください。</speak>`;
+        const rb = handlerInput.responseBuilder.speak(ssml);
+        if (typeof rb.withSimpleCard === 'function') rb.withSimpleCard('注文中止', plain);
+        return rb.getResponse();
       }
 
       if (confirmationStatus === 'DENIED') {
-        const speak = '注文中止をキャンセルしました。ほかに何をしますか？';
-        return handlerInput.responseBuilder.speak(speak).reprompt('ほかに何をしますか？').getResponse();
+        const plain = '注文中止をキャンセルしました。ほかに何をしますか？';
+        const ssml = `<speak>注文中止をキャンセルしました。ほかに何をしますか？</speak>`;
+        const rb = handlerInput.responseBuilder.speak(ssml).reprompt('ほかに何をしますか？');
+        if (typeof rb.withSimpleCard === 'function') rb.withSimpleCard('注文継続', plain);
+        return rb.getResponse();
       }
 
       // NONE -> set pending and ask
@@ -38,9 +44,12 @@ module.exports = {
       sessionAttributes.pending = true;
       sessionAttributes.pendingData = { kind: 'stopOrder' };
       attributesManager.setSessionAttributes(sessionAttributes);
-      const speak = '今回のご購入を中止してもよろしいですか？';
+      const plain = '今回のご購入を中止してもよろしいですか？';
       const reprompt = '今回の購入を中止してもよろしいですか？ はいで中止、いいえで継続します。';
-      return handlerInput.responseBuilder.speak(speak).reprompt(reprompt).getResponse();
+      const ssml = `<speak>${plain}</speak>`;
+      const rb = handlerInput.responseBuilder.speak(ssml).reprompt(reprompt);
+      if (typeof rb.withSimpleCard === 'function') rb.withSimpleCard('注文中止の確認', plain);
+      return rb.getResponse();
     } finally {
       console.log('End handling StopOrderHandler');
     }

@@ -64,18 +64,27 @@ module.exports = {
         sessionAttributes.lastAction = 'SpecifyWaonPointsIntent';
         attributesManager.setSessionAttributes(sessionAttributes);
         const speak = '申し訳ありません。使うポイント数を数字で教えてください。例えば、100とお答えください。';
-        return handlerInput.responseBuilder.speak(speak).reprompt('使うポイント数を数字で教えてください。').getResponse();
+        const ssml = `<speak>申し訳ありません。使うポイント数を数字で教えてください。例えば、<say-as interpret-as="digits">100</say-as>とお答えください。</speak>`;
+        const rb = handlerInput.responseBuilder.speak(ssml).reprompt('使うポイント数を数字で教えてください。');
+        if (typeof rb.withSimpleCard === 'function') rb.withSimpleCard('ポイントを入力してください', speak);
+        return rb.getResponse();
       }
 
       const validation = await PaymentService.validateWaonPoints(attributesManager, points);
       if (!validation.ok) {
         if (validation.reason === 'invalid') {
           const speak = '申し訳ありません。ポイント数は整数で教えてください。何ポイント使いますか？';
-          return handlerInput.responseBuilder.speak(speak).reprompt('使うポイント数を数字で教えてください。').getResponse();
+          const ssml = `<speak>申し訳ありません。ポイント数は整数で教えてください。何ポイント使いますか？</speak>`;
+          const rb = handlerInput.responseBuilder.speak(ssml).reprompt('使うポイント数を数字で教えてください。');
+          if (typeof rb.withSimpleCard === 'function') rb.withSimpleCard('ポイント数エラー', speak);
+          return rb.getResponse();
         }
         if (validation.reason === 'insufficient') {
           const speak = `申し訳ありません。利用可能なポイントは${validation.balance}ポイントです。何ポイント使いますか？`;
-          return handlerInput.responseBuilder.speak(speak).reprompt('使うポイント数を数字で教えてください。').getResponse();
+          const ssml = `<speak>申し訳ありません。利用可能なポイントは<say-as interpret-as="digits">${validation.balance}</say-as>ポイントです。何ポイント使いますか？</speak>`;
+          const rb = handlerInput.responseBuilder.speak(ssml).reprompt('使うポイント数を数字で教えてください。');
+          if (typeof rb.withSimpleCard === 'function') rb.withSimpleCard('ポイント不足', speak);
+          return rb.getResponse();
         }
       }
 
@@ -94,8 +103,11 @@ module.exports = {
 
       // Compute interim summary
       const computed = await PaymentService.computeFinalAmounts(attributesManager, sessionAttributes);
-      const speak = `${points}ポイントを使用します。現在の支払合計は${computed.totalAfterPoints}円です。オーナーズカードを利用しますか？ はい、またはいいえでお答えください。`;
-      return handlerInput.responseBuilder.speak(speak).reprompt('オーナーズカードを利用しますか？').getResponse();
+      const plain = `${points}ポイントを使用します。現在の支払合計は${computed.totalAfterPoints}円です。オーナーズカードを利用しますか？ はい、またはいいえでお答えください。`;
+      const ssml = `<speak><say-as interpret-as="digits">${points}</say-as>ポイントを使用します。現在の支払合計は<say-as interpret-as="digits">${computed.totalAfterPoints}</say-as>円です。オーナーズカードを利用しますか？ はい、またはいいえでお答えください。</speak>`;
+      const rb = handlerInput.responseBuilder.speak(ssml).reprompt('オーナーズカードを利用しますか？');
+      if (typeof rb.withSimpleCard === 'function') rb.withSimpleCard('支払合計の確認', plain);
+      return rb.getResponse();
     } finally {
       console.log('End handling SpecifyWaonPointsIntentHandler');
     }

@@ -55,6 +55,21 @@ module.exports = {
       const orderUtils = require('../utils/orderUtils');
       // Determine which confirmation is pending based on pendingData.kind
       const pendingData = sessionAttributes.pendingData || {};
+      // helper to strip outer <speak> wrapper
+      const stripSpeak = (s) => String(s || '').replace(/^<speak>\s*/i, '').replace(/\s*<\/speak>$/i, '');
+      // helper to build response with optional card; cardPlain overrides automatic extraction
+      const respond = (ssmlOrPlain, reprompt, cardPlain) => {
+        const isSSML = /<[^>]+>/.test(String(ssmlOrPlain));
+        const rb = isSSML ? handlerInput.responseBuilder.speak(ssmlOrPlain) : handlerInput.responseBuilder.speak(String(ssmlOrPlain));
+        if (reprompt) rb.reprompt(reprompt);
+        // attach a simple card when available, prefer explicit cardPlain, otherwise derive from ssmlOrPlain
+        if (typeof rb.withSimpleCard === 'function') {
+          const cardText = cardPlain ? String(cardPlain) : (isSSML ? stripSpeak(ssmlOrPlain).replace(/<[^>]+>/g, '') : String(ssmlOrPlain));
+          rb.withSimpleCard('確認', cardText);
+        }
+        return rb.getResponse();
+      };
+
       if (sessionAttributes.pending && pendingData.kind === 'clearCart') {
         // clear the generic pending flag
         delete sessionAttributes.pending;
@@ -64,13 +79,15 @@ module.exports = {
           // persist the cleared pending state before calling orderUtils
           attributesManager.setSessionAttributes(sessionAttributes);
           orderUtils.clearCartSession(attributesManager);
-          const speak = 'カートを空にしました。続けて他の商品を購入しますか、それとも買い物を終了しますか？ 続けて購入する場合は商品名で検索してください、買い物を終了する場合は「注文終了」と言ってください。どちらにしますか？';
-          return handlerInput.responseBuilder.speak(speak).reprompt('ほかに何をしますか？').getResponse();
+          const plain = 'カートをクリアしました。続けて、他の商品を購入しますか、それとも買い物を終了しますか？ 続けて購入する場合は商品名で検索してください、買い物を終了する場合は「注文終了」と言ってください。どちらにしますか？';
+          const ssml = `<speak>カートをクリアしました。<break time="300ms"/>続けて、他の商品を購入しますか、それとも買い物を終了しますか？ 続けて購入する場合は商品名で検索してください、買い物を終了する場合は「注文終了」と言ってください。どちらにしますか？</speak>`;
+          return respond(ssml, 'ほかに何をしますか？', plain);
         } else {
           // No -> cancel
           attributesManager.setSessionAttributes(sessionAttributes);
-          const speak = 'カートのクリアをキャンセルしました。ほかに何をしますか？';
-          return handlerInput.responseBuilder.speak(speak).reprompt('ほかに何をしますか？').getResponse();
+          const plain = 'カートのクリアをキャンセルしました。ほかに何をしますか？';
+          const ssml = `<speak>カートのクリアをキャンセルしました。ほかに何をしますか？</speak>`;
+          return respond(ssml, 'ほかに何をしますか？', plain);
         }
       }
 
@@ -81,13 +98,15 @@ module.exports = {
         if (isYes) {
           attributesManager.setSessionAttributes(sessionAttributes);
           await orderUtils.stopOrder(attributesManager);
-          const speak = 'ご注文を中止しました。必要な場合はまた最初から注文を開始してください。';
-          return handlerInput.responseBuilder.speak(speak).getResponse();
+          const plain = 'ご注文を中止しました。必要な場合はまた最初から注文を開始してください。';
+          const ssml = `<speak>ご注文を中止しました。必要な場合はまた最初から注文を開始してください。</speak>`;
+          return respond(ssml, null, plain);
         } else {
           // No -> cancel
           attributesManager.setSessionAttributes(sessionAttributes);
-          const speak = '注文の中止をキャンセルしました。ほかに何をしますか？';
-          return handlerInput.responseBuilder.speak(speak).reprompt('ほかに何をしますか？').getResponse();
+          const plain = '注文の中止をキャンセルしました。ほかに何をしますか？';
+          const ssml = `<speak>注文の中止をキャンセルしました。ほかに何をしますか？</speak>`;
+          return respond(ssml, 'ほかに何をしますか？', plain);
         }
       }
 
@@ -110,19 +129,21 @@ module.exports = {
             sessionAttributes.pending = true;
             sessionAttributes.pendingData = { kind: 'confirmCheckPromotions' };
             attributesManager.setSessionAttributes(sessionAttributes);
-            const speak = `届け先を ${address.spokenLabel} に設定しました。利用可能なクーポンを確認しますか？ はいで確認します、いいえでお支払いに進みます。`;
-            const reprompt = '利用可能なクーポンを確認しますか？ はい、またはいいえでお答えください。';
-            return handlerInput.responseBuilder.speak(speak).reprompt(reprompt).getResponse();
+            // prefer SSML label if available
+            const addrLabelSSML = address.spokenLabelSSML ? stripSpeak(address.spokenLabelSSML) : address.spokenLabel;
+            const plain = `届け先を ${address.spokenLabel} に設定しました。利用可能なクーポンを確認しますか？ はいで確認します、いいえでお支払いに進みます。`;
+            const ssml = `<speak>届け先を ${addrLabelSSML} に設定しました。<break time="200ms"/>利用可能なクーポンを確認しますか？ はいで確認します、いいえでお支払いに進みます。</speak>`;
+            return respond(ssml, '利用可能なクーポンを確認しますか？ はい、または、いいえ、でお答えください。', plain);
           } else {
             attributesManager.setSessionAttributes(sessionAttributes);
-            const speak = '申し訳ありません。届け先を設定できませんでした。もう一度やり直してください。';
-            return handlerInput.responseBuilder.speak(speak).reprompt('もう一度お願いします。').getResponse();
+            const ssml = `<speak>申し訳ありません。届け先を設定できませんでした。もう一度やり直してください。</speak>`;
+            return respond(ssml, 'もう一度お願いします。');
           }
         } else {
           // No -> cancel
           attributesManager.setSessionAttributes(sessionAttributes);
-          const speak = '届け先の設定をキャンセルしました。ほかに何をしますか？';
-          return handlerInput.responseBuilder.speak(speak).reprompt('ほかに何をしますか？').getResponse();
+          const ssml = `<speak>届け先の設定をキャンセルしました。ほかに何をしますか？</speak>`;
+          return respond(ssml, 'ほかに何をしますか？');
         }
       }
 
@@ -139,7 +160,7 @@ module.exports = {
           // ensure lastAction is set so the promotion handler behaves normally
           sessionAttributes.lastAction = 'SearchAvailablePromotionIntent';
           attributesManager.setSessionAttributes(sessionAttributes);
-          // call the handler and return its response
+          // call the handler and return its response (it returns a response object already)
           return await SearchAvailablePromotionIntentHandler.handle(handlerInput);
         } else {
           // No -> immediately start the payment flow by delegating to StartPaymentIntentHandler
@@ -149,16 +170,15 @@ module.exports = {
           attributesManager.setSessionAttributes(sessionAttributes);
           const StartPaymentIntentHandler = require('./StartPaymentIntentHandler');
           // play a short transition prompt, then delegate to StartPaymentIntentHandler and combine responses
-          const transition = 'では、お支払いを開始します。';
+          const transitionSSML = `<speak>では、お支払いを開始します。<break time="200ms"/></speak>`;
           const startResp = await StartPaymentIntentHandler.handle(handlerInput);
-          // startResp is expected to be an object with speak and optional reprompt
           const startSpeak = (startResp && startResp.speak) ? startResp.speak : '';
           const startReprompt = (startResp && startResp.reprompt) ? startResp.reprompt : null;
-          const combinedSpeak = `${transition} ${startSpeak}`.trim();
-          if (startReprompt) {
-            return handlerInput.responseBuilder.speak(combinedSpeak).reprompt(startReprompt).getResponse();
-          }
-          return handlerInput.responseBuilder.speak(combinedSpeak).getResponse();
+          // combine transition and startResp.speak, handling SSML if present
+          const inner = startSpeak ? stripSpeak(startSpeak) : '';
+          const combined = `<speak>${stripSpeak(transitionSSML)} ${inner}</speak>`;
+          if (startReprompt) return respond(combined, startReprompt);
+          return respond(combined);
         }
       }
 
@@ -181,9 +201,9 @@ module.exports = {
           sessionAttributes.pending = true;
           sessionAttributes.pendingData = { kind: 'confirmCheckPromotions' };
           attributesManager.setSessionAttributes(sessionAttributes);
-          const speak = 'わかりました。利用可能なクーポンを確認しますか？ はいで確認します、いいえでお支払いに進みます。';
-          const reprompt = '利用可能なクーポンを確認しますか？ はい、またはいいえでお答えください。';
-          return handlerInput.responseBuilder.speak(speak).reprompt(reprompt).getResponse();
+          const plain = 'わかりました。利用可能なクーポンを確認しますか？ はいで確認します、いいえでお支払いに進みます。';
+          const ssml = `<speak>わかりました。<break time="200ms"/>利用可能なクーポンを確認しますか？ はいで確認します、いいえでお支払いに進みます。</speak>`;
+          return respond(ssml, '利用可能なクーポンを確認しますか？ はい、または、いいえ、でお答えください。', plain);
         }
       }
 
@@ -202,8 +222,9 @@ module.exports = {
           sessionAttributes.lastAction = 'SpecifyWaonPointsIntent';
           attributesManager.setSessionAttributes(sessionAttributes);
           const balance = await PaymentService.getWaonBalance(attributesManager);
-          const speak = `ご利用可能なWAONポイントは${balance}ポイントです。何ポイント使いますか？ 数字で教えてください。`;
-          return handlerInput.responseBuilder.speak(speak).reprompt('何ポイント使いますか？').getResponse();
+          const plain = `ご利用可能なWAONポイントは${balance}ポイントです。何ポイント使いますか？ 数字で教えてください。`;
+          const ssml = `<speak>ご利用可能なWAONポイントは<say-as interpret-as="digits">${balance}</say-as>ポイントです。何ポイント使いますか？ 数字で教えてください。</speak>`;
+          return respond(ssml, '何ポイント使いますか？', plain);
         } else {
           // No -> skip points and ask shareholder card
           sessionAttributes.paymentFlow.useWaon = false;
@@ -213,8 +234,9 @@ module.exports = {
           sessionAttributes.pending = true;
           sessionAttributes.pendingData = { kind: 'confirmShareholderCard' };
           attributesManager.setSessionAttributes(sessionAttributes);
-          const speak = 'WAONポイントは使用しません。オーナーズカードを使いますか？ はい、またはいいえでお答えください。';
-          return handlerInput.responseBuilder.speak(speak).reprompt('オーナーズカードを使いますか？').getResponse();
+          const plain = 'WAONポイントは使用しません。オーナーズカードを使いますか？ はい、または、いいえ、でお答えください。';
+          const ssml = `<speak>WAONポイントは使用しません。<break time="200ms"/>オーナーズカードを使いますか？ はい、または、いいえ、でお答えください。</speak>`;
+          return respond(ssml, 'オーナーズカードを使いますか？', plain);
         }
       }
 
@@ -255,18 +277,19 @@ module.exports = {
             // finalize order: clear session and persistent order info
             const orderUtils = require('../utils/orderUtils');
             await orderUtils.finalizeOrderSuccess(attributesManager);
-            const speak = `ご注文とお支払いを確定しました。お支払い金額は${paymentResult.totalAfterPoints}円、今回は${paymentResult.rewardPoints}点 WAON POINTを貰いました。ありがとうございました。`;
-            return handlerInput.responseBuilder.speak(speak).getResponse();
+            const plain = `ご注文とお支払いを確定しました。お支払い金額は${paymentResult.totalAfterPoints}円、今回は${paymentResult.rewardPoints}点のWAON POINTを貰いました。ありがとうございました。`;
+            const ssml = `<speak>ご注文とお支払いを確定しました。お支払い金額は<say-as interpret-as="digits">${paymentResult.totalAfterPoints}</say-as>円、今回は<say-as interpret-as="digits">${paymentResult.rewardPoints}</say-as>点のWAON POINTを貰いました。ありがとうございました。</speak>`;
+            return respond(ssml, null, plain);
           } else {
             attributesManager.setSessionAttributes(sessionAttributes);
-            const speak = '申し訳ありません。支払い処理で問題が発生しました。もう一度お試しください。';
-            return handlerInput.responseBuilder.speak(speak).reprompt('もう一度お試しになりますか？').getResponse();
+            const ssml = `<speak>申し訳ありません。支払い処理で問題が発生しました。もう一度お試しください。</speak>`;
+            return respond(ssml, 'もう一度お試しになりますか？');
           }
         } else {
           // user cancelled final confirmation
           attributesManager.setSessionAttributes(sessionAttributes);
-          const speak = '注文を確定しませんでした。ほかに変更したい点はありますか？';
-          return handlerInput.responseBuilder.speak(speak).reprompt('ほかに変更したい点はありますか？').getResponse();
+          const ssml = `<speak>注文を確定しませんでした。ほかに変更したい点はありますか？</speak>`;
+          return respond(ssml, 'ほかに変更したい点はありますか？');
         }
       }
 
@@ -286,13 +309,13 @@ module.exports = {
         } else {
           // No -> ask user what they'd like to do next
           attributesManager.setSessionAttributes(sessionAttributes);
-          const speak = 'わかりました。ほかに何をしますか？';
-          return handlerInput.responseBuilder.speak(speak).reprompt('ほかに何をしますか？').getResponse();
+          const ssml = `<speak>わかりました。ほかに何をしますか？</speak>`;
+          return respond(ssml, 'ほかに何をしますか？');
         }
       }
 
       // If somehow reached here, fallback
-      return handlerInput.responseBuilder.speak('すみません、処理できませんでした。').getResponse();
+      return respond('<speak>すみません、処理できませんでした。</speak>');
     } finally {
       console.log('End handling PendingConfirmationHandler');
     }

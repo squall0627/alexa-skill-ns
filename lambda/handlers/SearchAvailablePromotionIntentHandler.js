@@ -52,13 +52,20 @@ module.exports = {
       // 利用可能なプロモーションを列挙してユーザーに選択を促す
       const promos = calc.availablePromos;
       const promoStrings = promos.map((p, i) => `番号${i + 1}、${p.name}、${p.discountAmount}円引き（条件${p.orderThreshold}円以上）`).join('。 ');
-      const spoken = `利用可能なクーポンがあります：${promoStrings}。どのクーポンを利用しますか？ 番号で教えてください。`;
+
+      // try to construct SSML using say-as for amounts
+      const ssmlItems = promos.map((p, i) => `<s>番号${i + 1}、${p.name}、<say-as interpret-as="digits">${p.discountAmount}</say-as>円引き（条件<say-as interpret-as="digits">${p.orderThreshold}</say-as>円以上）</s>`).join('<break time="300ms"/>');
+      const ssml = `<speak>利用可能なクーポンがあります：${ssmlItems}<break time="300ms"/>どのクーポンを利用しますか？ 番号で教えてください。</speak>`;
 
       // セッションに利用候補を保存
       sessionAttributes.availablePromos = promos;
       attributesManager.setSessionAttributes(sessionAttributes);
 
-      return handlerInput.responseBuilder.speak(spoken).reprompt('どのクーポンを利用しますか？').getResponse();
+      const rb = handlerInput.responseBuilder.speak(ssml).reprompt('どのクーポンを利用しますか？');
+      if (typeof rb.withSimpleCard === 'function') {
+        rb.withSimpleCard('利用可能なクーポン', promoStrings);
+      }
+      return rb.getResponse();
     } finally {
       console.log('End handling SearchAvailablePromotionIntentHandler');
     }

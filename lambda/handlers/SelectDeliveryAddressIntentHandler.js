@@ -48,7 +48,16 @@ module.exports = {
 
       const speak = `届け先を選択しました。${selected.spokenLabel} を届け先として設定しました。利用可能なクーポンを確認しますか？ はいで確認します、いいえでお支払いに進みます。`;
       const reprompt = '利用可能なクーポンを確認しますか？ はい、またはいいえでお答えください。';
-      return handlerInput.responseBuilder.speak(speak).reprompt(reprompt).getResponse();
+
+      // Prefer SSML if service provided it, otherwise fallback to plain text
+      const ssmlBody = selected.spokenLabelSSML ? String(selected.spokenLabelSSML).replace(/^<speak>\s*/i, '').replace(/\s*<\/speak>$/i, '') : null;
+      const fullSSML = ssmlBody ? `<speak>届け先を選択しました。${ssmlBody} を届け先として設定しました。利用可能なクーポンを確認しますか？ はいで確認します、いいえでお支払いに進みます。</speak>` : null;
+
+      const rb = fullSSML ? handlerInput.responseBuilder.speak(fullSSML).reprompt(reprompt) : handlerInput.responseBuilder.speak(speak).reprompt(reprompt);
+      if (typeof rb.withSimpleCard === 'function') {
+        rb.withSimpleCard('届け先を選択しました', selected.spokenLabel || '届け先を選択しました');
+      }
+      return rb.getResponse();
     } finally {
       console.log('End handling SelectDeliveryAddressIntentHandler');
     }

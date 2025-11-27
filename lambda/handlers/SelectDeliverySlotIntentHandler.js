@@ -57,7 +57,19 @@ module.exports = {
 
       const speak = `配送枠を選択しました。${selected.spokenLabel} を選択しました。現在の届け先は ${sessionAttributes.cartDeliveryAddress.spokenLabel} です。変更しますか？ はいで変更、いいえでお支払いに進みます。`;
       const reprompt = '届け先を変更しますか？ はい、またはいいえでお答えください。';
-      return handlerInput.responseBuilder.speak(speak).reprompt(reprompt).getResponse();
+
+      // Prefer SSML for selected slot and address if available
+      const slotSSML = selected.spokenLabelSSML ? String(selected.spokenLabelSSML).replace(/^<speak>\s*/i, '').replace(/\s*<\/speak>$/i, '') : null;
+      const addr = sessionAttributes.cartDeliveryAddress || {};
+      const addrSSML = addr.spokenLabelSSML ? String(addr.spokenLabelSSML).replace(/^<speak>\s*/i, '').replace(/\s*<\/speak>$/i, '') : null;
+
+      const fullSSML = (slotSSML || addrSSML) ? `<speak>配送枠を選択しました。${slotSSML || selected.spokenLabel} を選択しました。現在の届け先は ${addrSSML || addr.spokenLabel} です。変更しますか？ はいで変更、いいえでお支払いに進みます。</speak>` : null;
+
+      const rb = fullSSML ? handlerInput.responseBuilder.speak(fullSSML).reprompt(reprompt) : handlerInput.responseBuilder.speak(speak).reprompt(reprompt);
+      if (typeof rb.withSimpleCard === 'function') {
+        rb.withSimpleCard('配送枠を選択しました', `${selected.spokenLabel || selected.dateLabel || selected.id}\n届け先: ${addr.spokenLabel || ''}`);
+      }
+      return rb.getResponse();
     } finally {
       console.log('End handling SelectDeliverySlotIntentHandler');
     }

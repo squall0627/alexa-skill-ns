@@ -65,7 +65,7 @@ class PaymentService {
       waonPointsUsed: waonUse ? waonPoints : 0,
       totalAfterPoints: afterPoints,
       rewardPoints,
-      summary: `最終の支払金額は${afterPoints}円、今回の返点は${rewardPoints}点です。`
+      summary: `最終の支払金額は${afterPoints}円、今回は${rewardPoints}点のWAON POINTをもらえます。`
     };
   }
 

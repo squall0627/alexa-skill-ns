@@ -91,7 +91,7 @@ class DeliverySlotService {
     const s = String(timeStr).trim();
 
     // 典型的なレンジ: '10:00-11:00'
-    const rangeMatch = s.match(/^(\d{1,2}:?\d{0,2})\s*[-〜〜~to]+\s*(\d{1,2}:?\d{0,2})$/u);
+    const rangeMatch = s.match(/^(\d{1,2}:?\d{0,2})\s*[-〜~to]+\s*(\d{1,2}:?\d{0,2})$/u);
     if (rangeMatch) {
       const start = rangeMatch[1].includes(':') ? rangeMatch[1] : `${String(rangeMatch[1]).padStart(2, '0')}:00`;
       const end = rangeMatch[2].includes(':') ? rangeMatch[2] : `${String(rangeMatch[2]).padStart(2, '0')}:00`;
@@ -121,6 +121,51 @@ class DeliverySlotService {
 
     // 未解釈
     return null;
+  }
+
+  // 新規: 日本語のプレーンな日付表現を生成（例: "11月27日"）
+  _formatJapaneseDateLabel(dateISO) {
+    if (!dateISO) return null;
+    // dateISO は 'YYYY-MM-DD'
+    const parts = String(dateISO).split('-');
+    if (parts.length < 3) return null;
+    const month = parseInt(parts[1], 10);
+    const day = parseInt(parts[2], 10);
+    if (Number.isNaN(month) || Number.isNaN(day)) return null;
+    return `${month}月${day}日`;
+  }
+
+  // 新規: 日本語の時間帯表現を生成（例: '10:00-11:00' -> '10時から11時'）
+  _formatJapaneseTimeRangeLabel(timeRange) {
+    if (!timeRange) return null;
+    const parts = String(timeRange).split('-');
+    if (parts.length !== 2) return timeRange;
+    function fmt(t) {
+      const [h, m] = t.split(':');
+      const hh = parseInt(h, 10);
+      const mm = parseInt(m || '0', 10);
+      if (Number.isNaN(hh) || Number.isNaN(mm)) return t;
+      if (mm === 0) return `${hh}時`;
+      return `${hh}時${mm}分`;
+    }
+    return `${fmt(parts[0])}から${fmt(parts[1])}`;
+  }
+
+  // 新規: SSML 用の日付表現（Alexa の say-as を活用）
+  _formatSSMLDate(dateISO) {
+    if (!dateISO) return '';
+    // use say-as interpret-as="date" with ymd — value as YYYY-MM-DD
+    return `<say-as interpret-as="date" format="ymd">${dateISO}</say-as>`;
+  }
+
+  // 新規: SSML 用の時間帯表現（say-as interpret-as="time"）
+  _formatSSMLTimeRange(timeRange) {
+    if (!timeRange) return '';
+    const parts = String(timeRange).split('-');
+    if (parts.length !== 2) return timeRange;
+    const [start, end] = parts;
+    // Amazon supports say-as interpret-as="time" — provide the hh:mm
+    return `<say-as interpret-as="time">${start}</say-as>から<say-as interpret-as="time">${end}</say-as>`;
   }
 
   /**
@@ -199,7 +244,26 @@ class DeliverySlotService {
 
     const result = filtered.slice(0, limit);
 
-    return result.map((s) => ({ id: s.id, dateLabel: s.dateLabel, dateISO: s.dateISO, timeRange: s.timeRange, fee: s.fee, spokenLabel: `${s.dateLabel}、${s.timeRange}、配送費${s.fee === 0 ? '無料' : s.fee + '円'}` }));
+    return result.map((s) => {
+      const plainDate = this._formatJapaneseDateLabel(s.dateISO) || s.dateLabel;
+      const plainTime = this._formatJapaneseTimeRangeLabel(s.timeRange) || s.timeRange;
+      const feeText = s.fee === 0 ? '無料' : `${s.fee}円`;
+      const spokenLabel = `${plainDate}、${plainTime}、配送費${feeText}`;
+      // SSML version; wrap with <speak> so handlers can send as SSML response
+      const spokenLabelSSML = `<speak>${this._formatSSMLDate(s.dateISO)}、${this._formatSSMLTimeRange(s.timeRange)}、配送費${s.fee === 0 ? '無料' : `<say-as interpret-as="digits">${s.fee}</say-as>円`}</speak>`;
+
+      return {
+        id: s.id,
+        dateLabel: s.dateLabel,
+        dateISO: s.dateISO,
+        timeRange: s.timeRange,
+        fee: s.fee,
+        isoStart: s.isoStart,
+        isoEnd: s.isoEnd,
+        spokenLabel: spokenLabel,
+        spokenLabelSSML: spokenLabelSSML
+      };
+    });
   }
 }
 

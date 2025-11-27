@@ -56,11 +56,9 @@ class SearchProductService {
       }
 
       // 在庫ありのみ
-      if (!product.availability) {
-        return false;
-      }
+      return product.availability;
 
-      return true;
+
     });
 
     console.log(`[SearchProductService] Found ${results.length} matching products`);
@@ -143,7 +141,7 @@ class SearchProductService {
     const condition = productQuery || brand || category ? '検索結果：' : '';
 
     // 商品を提示した後、ユーザーに番号で選んでもらうプロンプトを追加
-    const askForSelection = results.length > 0 ? 'どの商品をカートに入れますか？ 番号で教えてください。' : '';
+    const askForSelection = results.length > 0 ? '。 どの商品をカートに入れますか？ 番号で教えてください。' : '';
 
     return `${condition}${productStrings}${
       results.length > 0 && totalPages > 1 ? `。 次のページもありますか？` : ''

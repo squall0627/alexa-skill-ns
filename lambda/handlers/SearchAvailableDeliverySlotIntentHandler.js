@@ -50,11 +50,23 @@ module.exports = {
         attributesManager.setSessionAttributes(sessionAttributes);
 
         // 読み上げ文を作成（最大3件）
+        // Plain text list for card/reprompt
         const listSpeech = available.map((s, i) => `番号${i + 1}、${s.spokenLabel}`).join('。 ');
-        const speak = `利用可能な配送枠を提示します。${listSpeech}。どの枠を選びますか？ 番号で教えてください。`;
         const reprompt = 'どの配送枠を選びますか？ 番号で教えてください。';
 
-        return handlerInput.responseBuilder.speak(speak).reprompt(reprompt).getResponse();
+        // Build SSML: strip <speak> wrapper from service field if present
+        const stripSpeak = (ssml) => String(ssml || '').replace(/^<speak>\s*/i, '').replace(/\s*<\/speak>$/i, '');
+        const ssmlItems = available.map((s, i) => `<s>番号${i + 1}、${stripSpeak(s.spokenLabelSSML)}</s>`).join('<break time="400ms"/>');
+        const ssml = `<speak>利用可能な配送枠を提示します。${ssmlItems}<break time="400ms"/>どの枠を選びますか？ 番号で教えてください。</speak>`;
+
+        // Include a Simple card with plain text as a fallback/visual
+        const cardText = `利用可能な配送枠:\n${available.map((s, i) => `${i + 1}. ${s.dateLabel} ${s.timeRange} (${s.fee === 0 ? '無料' : s.fee + '円'})`).join('\n')}`;
+
+        const rb = handlerInput.responseBuilder.speak(ssml).reprompt(reprompt);
+        if (typeof rb.withSimpleCard === 'function') {
+          rb.withSimpleCard('利用可能な配送枠', listSpeech || cardText);
+        }
+        return rb.getResponse();
       } catch (error) {
         console.error('[SearchAvailableDeliverySlotIntent] Error:', error);
         const speak = '申し訳ありません。配送枠の取得中にエラーが発生しました。もう一度お試しください。';
