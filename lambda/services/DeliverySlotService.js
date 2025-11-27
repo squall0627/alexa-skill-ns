@@ -250,7 +250,7 @@ class DeliverySlotService {
       const feeText = s.fee === 0 ? '無料' : `${s.fee}円`;
       const spokenLabel = `${plainDate}、${plainTime}、配送費${feeText}`;
       // SSML version; wrap with <speak> so handlers can send as SSML response
-      const spokenLabelSSML = `<speak>${this._formatSSMLDate(s.dateISO)}、${this._formatSSMLTimeRange(s.timeRange)}、配送費${s.fee === 0 ? '無料' : `<say-as interpret-as="digits">${s.fee}</say-as>円`}</speak>`;
+      const spokenLabelSSML = `<speak>${this._formatSSMLDate(s.dateISO)}、${this._formatSSMLTimeRange(s.timeRange)}、配送費${s.fee === 0 ? '無料' : `<say-as interpret-as="number">${s.fee}</say-as>円`}</speak>`;
 
       return {
         id: s.id,

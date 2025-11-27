@@ -20,7 +20,10 @@ module.exports = {
       const cart = sessionAttributes.cart || [];
       if (!Array.isArray(cart) || cart.length === 0) {
         const speak = 'カートに商品がありません。注文を確定できません。買い物するなら、「リンゴを探して」というふうに商品を検索してください？';
-        return handlerInput.responseBuilder.speak(speak).reprompt('ほかに何をしますか？').getResponse();
+        const { buildGenericCard, attachSpeechAndCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('カートが空です', speak);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, 'カートが空です', card);
+        return rb.reprompt('ほかに何をしますか？').getResponse();
       }
 
       const itemsText = cart.map((it, i) => {
@@ -55,7 +58,11 @@ module.exports = {
       sessionAttributes.lastAction = 'ConfirmOrderIntent';
       attributesManager.setSessionAttributes(sessionAttributes);
 
-      return handlerInput.responseBuilder.speak(speak).reprompt('注文を確定してよろしいですか？ はい／いいえでお答えください。').getResponse();
+      const { buildCartCard, buildGenericCard, attachSpeechAndCard } = require('../utils/responseUtils');
+      // Use cart card when possible, fallback to generic
+      const card = buildCartCard(cart) || buildGenericCard('注文内容の確認', `${itemsText}\n${delivery}\n${promo}\n${methodLabel}\n${waonUse}`);
+      const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '注文内容の確認', card);
+      return rb.reprompt('注文を確定してよろしいですか？ はい／いいえでお答えください。').getResponse();
     } finally {
       console.log('End handling ConfirmOrderIntentHandler');
     }

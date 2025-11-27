@@ -23,7 +23,10 @@ module.exports = {
       const cart = sessionAttributes.cart || [];
       if (!cart || cart.length === 0) {
         const speak = 'カートに商品がありません。ほかに何をしますか？';
-        return handlerInput.responseBuilder.speak(speak).reprompt('ほかに何をしますか？').getResponse();
+        const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('カートが空です', speak);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, 'カートが空です', card);
+        return rb.reprompt('ほかに何をしますか？').getResponse();
       }
 
       // 解析 ItemNumber
@@ -33,7 +36,10 @@ module.exports = {
 
       if (Number.isNaN(index) || index < 1 || index > cart.length) {
         const speak = `申し訳ありません。削除する商品の番号は1から${cart.length}の間で教えてください。`;
-        return handlerInput.responseBuilder.speak(speak).reprompt(`1から${cart.length}の番号で教えてください。`).getResponse();
+        const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('番号が範囲外です', speak);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '番号が範囲外です', card);
+        return rb.reprompt(`1から${cart.length}の番号で教えてください。`).getResponse();
       }
 
       const product = cart[index - 1];
@@ -57,7 +63,10 @@ module.exports = {
         attributesManager.setSessionAttributes(sessionAttributes);
         const speak = `${product.name} を何個削除しますか？ 全部削除する場合は「全部」と言ってください。`;
         const reprompt = '削除する個数を教えてください。例えば、1個、全部、のように答えてください。';
-        return handlerInput.responseBuilder.speak(speak).reprompt(reprompt).getResponse();
+        const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('削除する数量を教えてください', `${product.name}`);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '削除する数量を教えてください', card);
+        return rb.reprompt(reprompt).getResponse();
       }
 
       // 有数量，执行删除或减少
@@ -71,7 +80,10 @@ module.exports = {
       const speak = removedCompletely
         ? `${shortInfo} を削除しました。現在カートには ${newCart.length} 件の商品があります。`
         : `${shortInfo} を ${quantity} 個削除しました。残りは ${remainingQuantity} 個です。現在カートには ${newCart.length} 件の商品があります。`;
-      return handlerInput.responseBuilder.speak(speak).reprompt('ほかに何をしますか？').getResponse();
+      const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+      const card = buildGenericCard('削除しました', speak);
+      const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '削除しました', card);
+      return rb.reprompt('ほかに何をしますか？').getResponse();
     } finally {
       console.log('End handling DeleteCartIntentHandler');
     }

@@ -45,13 +45,19 @@ module.exports = {
       if (!lastResults || lastResults.length === 0) {
         const speak = '現在カートに追加できる検索結果がありません。商品を検索して、表示された番号を教えてください。';
         console.log(`[AddCartIntent] No lastSearchResults available, returning error message`);
-        return handlerInput.responseBuilder.speak(speak).reprompt('どの商品をお探しですか？').getResponse();
+        const { buildGenericCard, attachSpeechAndCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('検索結果がありません', speak);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '検索結果がありません', card);
+        return rb.reprompt('どの商品をお探しですか？').getResponse();
       }
 
       if (Number.isNaN(index) || index < 1 || index > lastResults.length) {
         const speak = `申し訳ありません。番号は1から${lastResults.length}の間で教えてください。もう一度番号を教えてください。`;
         console.log(`[AddCartIntent] Invalid index: ${index}, max: ${lastResults.length}`);
-        return handlerInput.responseBuilder.speak(speak).reprompt(`1から${lastResults.length}の番号で教えてください。`).getResponse();
+        const { buildGenericCard, attachSpeechAndCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('番号が範囲外です', speak);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '番号が範囲外です', card);
+        return rb.reprompt(`1から${lastResults.length}の番号で教えてください。`).getResponse();
       }
 
       const product = lastResults[index - 1];
@@ -73,7 +79,10 @@ module.exports = {
         // 改訂：追加後のプロンプトで3つの選択肢を提示し、各操作の例を示す
         const speak = `${shortInfo} を ${quantity} 個追加しました。合計で ${totalQuantity} 個になりました。現在カートには ${newCart.length} 件の商品があります。次にどうしますか？続けて別の商品を探す、カートを確認する、または配送便を選ぶことができます。カートを確認するなら「カートを見せて」、配送便を選ぶなら「配送便を見せて」と言ってください。どれにしますか？`;
         const reprompt = '続けて買い物するなら商品名で探してください、カートを確認するなら「カートを見て」、配送の便を選ぶなら「配送時間を選んで」と言ってください。';
-        return handlerInput.responseBuilder.speak(speak).reprompt(reprompt).getResponse();
+        const { buildGenericCard, attachSpeechAndCard } = require('../utils/responseUtils');
+        const cardBody = buildGenericCard('カートに追加しました', `${shortInfo}\n数量: ${quantity}\n合計個数: ${totalQuantity}\nカート内商品種類: ${newCart.length}`);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, 'カートに追加しました', cardBody);
+        return rb.reprompt(reprompt).getResponse();
       }
 
       // 用户没有提供数量：保存 pendingAdd 并向用户询问数量
@@ -84,7 +93,10 @@ module.exports = {
 
       const speak = `${product.name} を何個カートに入れますか？`;
       const reprompt = '個数を教えてください。例えば、2個、3個のようにお答えください。';
-      return handlerInput.responseBuilder.speak(speak).reprompt(reprompt).getResponse();
+      const { buildGenericCard, attachSpeechAndCard } = require('../utils/responseUtils');
+      const card = buildGenericCard('数量を教えてください', `${product.name}`);
+      const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '数量を教えてください', card);
+      return rb.reprompt(reprompt).getResponse();
     } finally {
       console.log('End handling AddCartIntentHandler');
     }

@@ -38,7 +38,10 @@ module.exports = {
       const speak = `お支払い方法を選択してください。${parts}。番号でお答えください。`;
       const reprompt = 'お支払い方法を番号で教えてください。例：2番。';
 
-      return handlerInput.responseBuilder.speak(speak).reprompt(reprompt).getResponse();
+      const { buildGenericCard, attachSpeechAndCard } = require('../utils/responseUtils');
+      const cardBody = buildGenericCard('お支払い方法', methods.map((m, i) => `${i + 1}. ${m.label}`).join('\n'));
+      const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, 'お支払い方法を選択してください', cardBody);
+      return rb.reprompt(reprompt).getResponse();
     } finally {
       console.log('End handling StartPaymentIntentHandler');
     }

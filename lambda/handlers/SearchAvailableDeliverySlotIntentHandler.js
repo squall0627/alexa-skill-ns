@@ -28,7 +28,10 @@ module.exports = {
         const cart = sessionAttributes.cart || [];
         if (!cart || cart.length === 0) {
           const speak = 'カートに商品が入っていません。先に商品を選んでください。どの商品を探しますか？';
-          return handlerInput.responseBuilder.speak(speak).reprompt('どの商品を探しますか？').getResponse();
+          const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+          const card = buildGenericCard('カートが空です', speak);
+          const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, 'カートが空です', card);
+          return rb.reprompt('どの商品を探しますか？').getResponse();
         }
 
         // ユーザーが日付／時間を指定した場合はそれを使う
@@ -42,7 +45,10 @@ module.exports = {
 
         if (!available || available.length === 0) {
           const speak = '申し訳ありません。指定された条件で利用可能な配送枠が見つかりませんでした。別の日付や時間を指定するか、条件を変更してください。';
-          return handlerInput.responseBuilder.speak(speak).reprompt('別の日付や時間を指定しますか？').getResponse();
+          const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+          const card = buildGenericCard('配送枠が見つかりません', speak);
+          const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '配送枠が見つかりません', card);
+          return rb.reprompt('別の日付や時間を指定しますか？').getResponse();
         }
 
         // セッションに候補を保存しておく（後でユーザーが番号選択することを想定）
@@ -62,15 +68,17 @@ module.exports = {
         // Include a Simple card with plain text as a fallback/visual
         const cardText = `利用可能な配送枠:\n${available.map((s, i) => `${i + 1}. ${s.dateLabel} ${s.timeRange} (${s.fee === 0 ? '無料' : s.fee + '円'})`).join('\n')}`;
 
-        const rb = handlerInput.responseBuilder.speak(ssml).reprompt(reprompt);
-        if (typeof rb.withSimpleCard === 'function') {
-          rb.withSimpleCard('利用可能な配送枠', listSpeech || cardText);
-        }
-        return rb.getResponse();
+        const { buildGenericCard, attachSpeechAndCard } = require('../utils/responseUtils');
+        const cardBody = buildGenericCard('利用可能な配送枠', listSpeech || cardText);
+        const rbFinal = attachSpeechAndCard(handlerInput.responseBuilder, ssml, '利用可能な配送枠', cardBody);
+        return rbFinal.reprompt(reprompt).getResponse();
       } catch (error) {
         console.error('[SearchAvailableDeliverySlotIntent] Error:', error);
         const speak = '申し訳ありません。配送枠の取得中にエラーが発生しました。もう一度お試しください。';
-        return handlerInput.responseBuilder.speak(speak).reprompt('もう一度お試しください。').getResponse();
+        const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('配送枠エラー', speak);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '配送枠エラー', card);
+        return rb.reprompt('もう一度お試しください。').getResponse();
       }
     } finally {
       console.log('End handling SearchAvailableDeliverySlotIntentHandler');

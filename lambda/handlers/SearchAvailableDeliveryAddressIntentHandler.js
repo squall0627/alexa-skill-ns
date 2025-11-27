@@ -24,7 +24,10 @@ module.exports = {
         sessionAttributes.pendingData = { kind: 'addNewAddress' };
         sessionAttributes.lastAction = 'SearchAvailableDeliveryAddressIntent';
         attributesManager.setSessionAttributes(sessionAttributes);
-        return handlerInput.responseBuilder.speak(speak).reprompt('新しい届け先を追加しますか？ はい／いいえ でお答えください。').getResponse();
+        const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('届け先が見つかりません', speak);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '届け先が見つかりません', card);
+        return rb.reprompt('新しい届け先を追加しますか？ はい／いいえ でお答えください。').getResponse();
       }
 
       // Save addresses to session for selection later
@@ -36,15 +39,25 @@ module.exports = {
         sessionAttributes.pending = true;
         sessionAttributes.pendingData = { kind: 'confirmDefaultAddress', addressIndex: 1 };
         attributesManager.setSessionAttributes(sessionAttributes);
-        const speak = `現在の届け先は ${addresses[0].spokenLabel} です。こちらを使いますか？`;
-        return handlerInput.responseBuilder.speak(speak).reprompt('この届け先を使いますか？ はい/いいえ でお答えください。').getResponse();
+        const addr = addresses[0];
+        const speak = `現在の届け先は ${addr.spokenLabel} です。こちらを使いますか？`;
+        // prefer SSML label if available
+        const ssmlBody = addr.spokenLabelSSML ? String(addr.spokenLabelSSML).replace(/^<speak>\s*/i, '').replace(/\s*<\/speak>$/i, '') : null;
+        const fullSSML = ssmlBody ? `<speak>現在の届け先は ${ssmlBody} です。こちらを使いますか？</speak>` : null;
+        const { buildAddressCard, attachSpeechAndCard } = require('../utils/responseUtils');
+        const card = buildAddressCard(addr);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, fullSSML || speak, '届け先の確認', card);
+        return rb.reprompt('この届け先を使いますか？ はい/いいえ でお答えください。').getResponse();
       }
 
       // Build numbered list speech (keep it concise)
       const parts = addresses.map((a, idx) => `${idx + 1}番: ${a.spokenLabel}`);
       const speak = `以下から届け先を選択してください。${parts.join('、')}。どの番号にしますか？`;
       attributesManager.setSessionAttributes(sessionAttributes);
-      return handlerInput.responseBuilder.speak(speak).reprompt('番号で教えてください。例えば、1番。').getResponse();
+      const { buildGenericCard, attachSpeechAndCard } = require('../utils/responseUtils');
+      const cardBody = buildGenericCard('利用可能な届け先', addresses.map((a, i) => `${i + 1}. ${a.spokenLabel}`).join('\n'));
+      const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '利用可能な届け先', cardBody);
+      return rb.reprompt('番号で教えてください。例えば、1番。').getResponse();
     } finally {
       console.log('End handling SearchAvailableDeliveryAddressIntentHandler');
     }

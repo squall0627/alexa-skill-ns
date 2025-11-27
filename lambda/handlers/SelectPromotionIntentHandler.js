@@ -22,13 +22,19 @@ module.exports = {
       const availablePromos = sessionAttributes.availablePromos || [];
       if (!availablePromos || availablePromos.length === 0) {
         const spoken = '現在選択できるクーポンがありません。まずクーポンの確認を行ってください。';
-        return handlerInput.responseBuilder.speak(spoken).reprompt('ほかに何をしますか？').getResponse();
+        const { buildGenericCard, attachSpeechAndCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('クーポンがありません', spoken);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, spoken, 'クーポンがありません', card);
+        return rb.reprompt('ほかに何をしますか？').getResponse();
       }
 
       const choice = parseInt(slots.PromoNumber, 10);
       if (Number.isNaN(choice) || choice < 1 || choice > availablePromos.length) {
         const spoken = `番号が正しくありません。1から${availablePromos.length}の番号でお知らせください。`;
-        return handlerInput.responseBuilder.speak(spoken).reprompt('どのクーポンにしますか？ 番号で教えてください。').getResponse();
+        const { buildGenericCard, attachSpeechAndCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('番号が正しくありません', spoken);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, spoken, '番号が正しくありません', card);
+        return rb.reprompt('どのクーポンにしますか？ 番号で教えてください。').getResponse();
       }
 
       const selected = availablePromos[choice - 1];
@@ -54,7 +60,10 @@ module.exports = {
 
       const spoken = `${selected.name}を適用しました。${final.summary} お支払いに進みますか？ はい、でお支払いに進みます、いいえ、の場合はほかに何をしますかと教えてください。`;
       const reprompt = 'お支払いに進みますか？ はい、またはいいえでお答えください。';
-      return handlerInput.responseBuilder.speak(spoken).reprompt(reprompt).getResponse();
+      const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+      const card = buildGenericCard('クーポンを適用しました', `${selected.name}\n${final.summary}`);
+      const rb = attachSpeechAndCard(handlerInput.responseBuilder, spoken, 'クーポンを適用しました', card);
+      return rb.reprompt(reprompt).getResponse();
     } finally {
       console.log('End handling SelectPromotionIntentHandler');
     }

@@ -25,13 +25,19 @@ module.exports = {
       const available = sessionAttributes.availableDeliveryAddresses || [];
       if (!Array.isArray(available) || available.length === 0) {
         const speak = '申し訳ありません。先に届け先を検索してください。どの届け先にしますか？';
-        return handlerInput.responseBuilder.speak(speak).reprompt('届け先を選択するには、利用可能な届け先を検索してから番号でお答えください。').getResponse();
+        const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('届け先が見つかりません', speak);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '届け先が見つかりません', card);
+        return rb.reprompt('届け先を選択するには、利用可能な届け先を検索してから番号でお答えください。').getResponse();
       }
 
       const idx = Number(numberValue);
       if (!Number.isInteger(idx) || idx < 1 || idx > available.length) {
         const speak = `申し訳ありません。番号は1から${available.length}の間で教えてください。もう一度番号を教えてください。`;
-        return handlerInput.responseBuilder.speak(speak).reprompt(`番号は1から${available.length}の間で教えてください。`).getResponse();
+        const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('番号が範囲外です', speak);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '番号が範囲外です', card);
+        return rb.reprompt(`番号は1から${available.length}の間で教えてください。`).getResponse();
       }
 
       const selected = available[idx - 1];
@@ -53,11 +59,12 @@ module.exports = {
       const ssmlBody = selected.spokenLabelSSML ? String(selected.spokenLabelSSML).replace(/^<speak>\s*/i, '').replace(/\s*<\/speak>$/i, '') : null;
       const fullSSML = ssmlBody ? `<speak>届け先を選択しました。${ssmlBody} を届け先として設定しました。利用可能なクーポンを確認しますか？ はいで確認します、いいえでお支払いに進みます。</speak>` : null;
 
-      const rb = fullSSML ? handlerInput.responseBuilder.speak(fullSSML).reprompt(reprompt) : handlerInput.responseBuilder.speak(speak).reprompt(reprompt);
-      if (typeof rb.withSimpleCard === 'function') {
-        rb.withSimpleCard('届け先を選択しました', selected.spokenLabel || '届け先を選択しました');
-      }
-      return rb.getResponse();
+      // Attach Alexa card (nicely formatted) alongside the speech. Prefer SSML if available.
+      const { buildAddressCard, attachSpeechAndCard } = require('../utils/responseUtils');
+      const card = buildAddressCard(selected);
+      const speechToUse = fullSSML || speak;
+      const rbFinal = attachSpeechAndCard(handlerInput.responseBuilder, speechToUse, '届け先を選択しました', card);
+      return rbFinal.reprompt(reprompt).getResponse();
     } finally {
       console.log('End handling SelectDeliveryAddressIntentHandler');
     }

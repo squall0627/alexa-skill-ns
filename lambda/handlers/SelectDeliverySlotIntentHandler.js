@@ -24,13 +24,19 @@ module.exports = {
 
       if (!available || available.length === 0) {
         const speak = '申し訳ありません。利用可能な配送枠の候補が見つかりません。もう一度配達枠を表示しますか？';
-        return handlerInput.responseBuilder.speak(speak).reprompt('配達枠を表示しますか？').getResponse();
+        const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('配送枠が見つかりません', speak);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '配送枠が見つかりません', card);
+        return rb.reprompt('配達枠を表示しますか？').getResponse();
       }
 
       const index = slotNumberValue ? parseInt(slotNumberValue, 10) : NaN;
       if (Number.isNaN(index) || index < 1 || index > available.length) {
         const speak = `申し訳ありません。番号は1から${available.length}の間で教えてください。どの枠を選びますか？`;
-        return handlerInput.responseBuilder.speak(speak).reprompt('番号で教えてください。').getResponse();
+        const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('番号が範囲外です', speak);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '番号が範囲外です', card);
+        return rb.reprompt('番号で教えてください。').getResponse();
       }
 
       const selected = available[index - 1];
@@ -65,11 +71,11 @@ module.exports = {
 
       const fullSSML = (slotSSML || addrSSML) ? `<speak>配送枠を選択しました。${slotSSML || selected.spokenLabel} を選択しました。現在の届け先は ${addrSSML || addr.spokenLabel} です。変更しますか？ はいで変更、いいえでお支払いに進みます。</speak>` : null;
 
-      const rb = fullSSML ? handlerInput.responseBuilder.speak(fullSSML).reprompt(reprompt) : handlerInput.responseBuilder.speak(speak).reprompt(reprompt);
-      if (typeof rb.withSimpleCard === 'function') {
-        rb.withSimpleCard('配送枠を選択しました', `${selected.spokenLabel || selected.dateLabel || selected.id}\n届け先: ${addr.spokenLabel || ''}`);
-      }
-      return rb.getResponse();
+      const { buildGenericCard, attachSpeechAndCard } = require('../utils/responseUtils');
+      const cardBody = buildGenericCard('配送枠', `${selected.spokenLabel || selected.dateLabel || selected.id}\n届け先: ${addr.spokenLabel || ''}`);
+      const speechToUse = fullSSML || speak;
+      const rbFinal = attachSpeechAndCard(handlerInput.responseBuilder, speechToUse, '配送枠を選択しました', cardBody);
+      return rbFinal.reprompt(reprompt).getResponse();
     } finally {
       console.log('End handling SelectDeliverySlotIntentHandler');
     }

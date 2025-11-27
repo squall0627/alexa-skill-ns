@@ -125,11 +125,17 @@ module.exports = {
 
         // Fallback: let the IntentReflector or normal chain handle it
         const speak = '申し訳ありません。何の番号か分かりませんでした。もう一度言ってください。';
-        return handlerInput.responseBuilder.speak(speak).reprompt(speak).getResponse();
+        const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('番号の解釈が不明', speak);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '番号の解釈が不明', card);
+        return rb.reprompt(speak).getResponse();
       } catch (err) {
         console.log('[NumberOnlyIntentHandler] error routing:', err);
         const speak = '処理中にエラーが発生しました。もう一度お願いいたします。';
-        return handlerInput.responseBuilder.speak(speak).reprompt(speak).getResponse();
+        const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('エラー', speak);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, 'エラー', card);
+        return rb.reprompt(speak).getResponse();
       }
     } finally {
       console.log('End handling NumberOnlyIntentHandler');

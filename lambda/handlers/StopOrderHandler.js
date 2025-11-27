@@ -22,21 +22,23 @@ module.exports = {
       const intent = request.request.intent || {};
       const confirmationStatus = intent.confirmationStatus || 'NONE';
 
+      const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+
       if (confirmationStatus === 'CONFIRMED') {
         await orderUtils.stopOrder(attributesManager);
         const plain = '今回のご購入を中止しました。必要な場合はまた最初からご注文ください。';
         const ssml = `<speak>今回のご購入を中止しました。必要な場合はまた最初からご注文ください。</speak>`;
-        const rb = handlerInput.responseBuilder.speak(ssml);
-        if (typeof rb.withSimpleCard === 'function') rb.withSimpleCard('注文中止', plain);
+        const card = buildGenericCard('注文中止', plain);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, ssml, '注文中止', card);
         return rb.getResponse();
       }
 
       if (confirmationStatus === 'DENIED') {
         const plain = '注文中止をキャンセルしました。ほかに何をしますか？';
         const ssml = `<speak>注文中止をキャンセルしました。ほかに何をしますか？</speak>`;
-        const rb = handlerInput.responseBuilder.speak(ssml).reprompt('ほかに何をしますか？');
-        if (typeof rb.withSimpleCard === 'function') rb.withSimpleCard('注文継続', plain);
-        return rb.getResponse();
+        const card = buildGenericCard('注文継続', plain);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, ssml, '注文継続', card);
+        return rb.reprompt('ほかに何をしますか？').getResponse();
       }
 
       // NONE -> set pending and ask
@@ -47,9 +49,9 @@ module.exports = {
       const plain = '今回のご購入を中止してもよろしいですか？';
       const reprompt = '今回の購入を中止してもよろしいですか？ はいで中止、いいえで継続します。';
       const ssml = `<speak>${plain}</speak>`;
-      const rb = handlerInput.responseBuilder.speak(ssml).reprompt(reprompt);
-      if (typeof rb.withSimpleCard === 'function') rb.withSimpleCard('注文中止の確認', plain);
-      return rb.getResponse();
+      const card = buildGenericCard('注文中止の確認', plain);
+      const rb = attachSpeechAndCard(handlerInput.responseBuilder, ssml, '注文中止の確認', card);
+      return rb.reprompt(reprompt).getResponse();
     } finally {
       console.log('End handling StopOrderHandler');
     }

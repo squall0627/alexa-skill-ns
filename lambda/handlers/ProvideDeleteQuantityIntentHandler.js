@@ -27,7 +27,10 @@ module.exports = {
       const pendingData = sessionAttributes.pendingData;
       if (!pendingData || !pendingData.productId) {
         const speak = 'どの商品を削除するのか分かりませんでした。商品番号を教えてください。';
-        return handlerInput.responseBuilder.speak(speak).reprompt('削除したい商品の番号を教えてください。').getResponse();
+        const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('削除対象が不明', speak);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '削除対象が不明', card);
+        return rb.reprompt('削除したい商品の番号を教えてください。').getResponse();
       }
 
       // 解析数量
@@ -44,7 +47,10 @@ module.exports = {
 
       if (Number.isNaN(quantity) && quantity !== null) {
         const speak = '個数がわかりませんでした。何個削除しますか？';
-        return handlerInput.responseBuilder.speak(speak).reprompt('削除する個数を教えてください。').getResponse();
+        const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('個数が不明です', speak);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '個数が不明です', card);
+        return rb.reprompt('削除する個数を教えてください。').getResponse();
       }
 
       const cart = sessionAttributes.cart || [];
@@ -62,7 +68,10 @@ module.exports = {
         ? `項目を削除しました。現在カートには ${newCart.length} 件の商品があります。`
         : `指定の個数を削除しました。残りは ${remainingQuantity} 個です。現在カートには ${newCart.length} 件の商品があります。`;
 
-      return handlerInput.responseBuilder.speak(speak).reprompt('ほかに何をしますか？').getResponse();
+      const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+      const card = buildGenericCard('削除完了', speak);
+      const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '削除完了', card);
+      return rb.reprompt('ほかに何をしますか？').getResponse();
     } finally {
       console.log('End handling ProvideDeleteQuantityIntentHandler');
     }

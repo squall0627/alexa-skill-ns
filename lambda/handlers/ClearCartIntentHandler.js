@@ -21,6 +21,8 @@ module.exports = {
       const intent = request.request.intent || {};
       const confirmationStatus = intent.confirmationStatus || 'NONE';
 
+      const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+
       if (confirmationStatus === 'CONFIRMED') {
         // perform clear using shared util
         const orderUtils = require('../utils/orderUtils');
@@ -30,9 +32,9 @@ module.exports = {
         const plain = 'カートの中身を空にしました。続けて他の商品を購入しますか、それとも買い物を終了しますか？ 続けて購入する場合は商品名で検索してください、買い物を終了する場合は「注文終了」と言ってください。どちらにしますか？';
         const reprompt = '続けて購入するなら商品名で検索してください、買い物を終えるなら「注文終了」と言ってください。';
         const ssml = `<speak>カートの中身を空にしました。<break time="300ms"/>続けて他の商品を購入しますか、それとも買い物を終了しますか？ 続けて購入する場合は商品名で検索してください、買い物を終了する場合は「注文終了」と言ってください。どちらにしますか？</speak>`;
-        const rb = handlerInput.responseBuilder.speak(ssml).reprompt(reprompt);
-        if (typeof rb.withSimpleCard === 'function') rb.withSimpleCard('カートを空にしました', plain);
-        return rb.getResponse();
+        const card = buildGenericCard('カートを空にしました', plain);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, ssml, 'カートを空にしました', card);
+        return rb.reprompt(reprompt).getResponse();
       }
 
       if (confirmationStatus === 'DENIED') {
@@ -40,9 +42,9 @@ module.exports = {
         const plain = 'カートのクリアをキャンセルしました。続けて買い物をしますか、それとも終了しますか？ 続けて買う場合は商品名で検索してください、終了する場合は「注文終了」と言ってください。';
         const reprompt = '続けて買い物するなら商品名で検索してください、終了するなら「注文終了」と言ってください。';
         const ssml = `<speak>カートのクリアをキャンセルしました。続けて買い物をしますか、それとも終了しますか？ 続けて買う場合は商品名で検索してください、終了する場合は「注文終了」と言ってください。</speak>`;
-        const rb = handlerInput.responseBuilder.speak(ssml).reprompt(reprompt);
-        if (typeof rb.withSimpleCard === 'function') rb.withSimpleCard('カートクリアをキャンセル', plain);
-        return rb.getResponse();
+        const card = buildGenericCard('カートクリアをキャンセル', plain);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, ssml, 'カートクリアをキャンセル', card);
+        return rb.reprompt(reprompt).getResponse();
       }
 
       // confirmationStatus === 'NONE' -> ask for confirmation and set generic pending flag
@@ -53,9 +55,9 @@ module.exports = {
       const plain = 'カートの中身を全部消してもよろしいですか？はい、または、いいえ、で回答してください。';
       const reprompt = 'カートを空にしてもよいですか？ はい、で確定、いいえ、で中止します。';
       const ssml = `<speak>${plain}</speak>`;
-      const rb = handlerInput.responseBuilder.speak(ssml).reprompt(reprompt);
-      if (typeof rb.withSimpleCard === 'function') rb.withSimpleCard('カートクリアの確認', plain);
-      return rb.getResponse();
+      const card = buildGenericCard('カートクリアの確認', plain);
+      const rb = attachSpeechAndCard(handlerInput.responseBuilder, ssml, 'カートクリアの確認', card);
+      return rb.reprompt(reprompt).getResponse();
     } finally {
       console.log('End handling ClearCartIntentHandler');
     }

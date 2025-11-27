@@ -58,15 +58,13 @@ module.exports = {
       // helper to strip outer <speak> wrapper
       const stripSpeak = (s) => String(s || '').replace(/^<speak>\s*/i, '').replace(/\s*<\/speak>$/i, '');
       // helper to build response with optional card; cardPlain overrides automatic extraction
+      const { attachSpeechAndCard } = require('../utils/responseUtils');
       const respond = (ssmlOrPlain, reprompt, cardPlain) => {
         const isSSML = /<[^>]+>/.test(String(ssmlOrPlain));
-        const rb = isSSML ? handlerInput.responseBuilder.speak(ssmlOrPlain) : handlerInput.responseBuilder.speak(String(ssmlOrPlain));
+        const speech = ssmlOrPlain || '';
+        const cardText = cardPlain ? String(cardPlain) : (isSSML ? stripSpeak(ssmlOrPlain).replace(/<[^>]+>/g, '') : String(ssmlOrPlain));
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speech, '確認', cardText);
         if (reprompt) rb.reprompt(reprompt);
-        // attach a simple card when available, prefer explicit cardPlain, otherwise derive from ssmlOrPlain
-        if (typeof rb.withSimpleCard === 'function') {
-          const cardText = cardPlain ? String(cardPlain) : (isSSML ? stripSpeak(ssmlOrPlain).replace(/<[^>]+>/g, '') : String(ssmlOrPlain));
-          rb.withSimpleCard('確認', cardText);
-        }
         return rb.getResponse();
       };
 
@@ -223,7 +221,7 @@ module.exports = {
           attributesManager.setSessionAttributes(sessionAttributes);
           const balance = await PaymentService.getWaonBalance(attributesManager);
           const plain = `ご利用可能なWAONポイントは${balance}ポイントです。何ポイント使いますか？ 数字で教えてください。`;
-          const ssml = `<speak>ご利用可能なWAONポイントは<say-as interpret-as="digits">${balance}</say-as>ポイントです。何ポイント使いますか？ 数字で教えてください。</speak>`;
+          const ssml = `<speak>ご利用可能なWAONポイントは<say-as interpret-as="number">${balance}</say-as>ポイントです。何ポイント使いますか？ 数字で教えてください。</speak>`;
           return respond(ssml, '何ポイント使いますか？', plain);
         } else {
           // No -> skip points and ask shareholder card
@@ -278,7 +276,7 @@ module.exports = {
             const orderUtils = require('../utils/orderUtils');
             await orderUtils.finalizeOrderSuccess(attributesManager);
             const plain = `ご注文とお支払いを確定しました。お支払い金額は${paymentResult.totalAfterPoints}円、今回は${paymentResult.rewardPoints}点のWAON POINTを貰いました。ありがとうございました。`;
-            const ssml = `<speak>ご注文とお支払いを確定しました。お支払い金額は<say-as interpret-as="digits">${paymentResult.totalAfterPoints}</say-as>円、今回は<say-as interpret-as="digits">${paymentResult.rewardPoints}</say-as>点のWAON POINTを貰いました。ありがとうございました。</speak>`;
+            const ssml = `<speak>ご注文とお支払いを確定しました。お支払い金額は<say-as interpret-as="number">${paymentResult.totalAfterPoints}</say-as>円、今回は<say-as interpret-as="number">${paymentResult.rewardPoints}</say-as>点のWAON POINTを貰いました。ありがとうございました。</speak>`;
             return respond(ssml, null, plain);
           } else {
             attributesManager.setSessionAttributes(sessionAttributes);

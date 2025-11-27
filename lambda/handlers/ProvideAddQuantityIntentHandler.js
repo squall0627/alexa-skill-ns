@@ -29,7 +29,10 @@ module.exports = {
       const pendingData = sessionAttributes.pendingData;
       if (!pendingData || pendingData.kind !== 'addQuantity' || !pendingData.product) {
         const speak = 'どの商品についての個数か分かりませんでした。追加したい商品を番号で教えてください。';
-        return handlerInput.responseBuilder.speak(speak).reprompt('どの商品をカートに入れますか？').getResponse();
+        const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('個数対象が不明', speak);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '個数対象が不明', card);
+        return rb.reprompt('どの商品をカートに入れますか？').getResponse();
       }
 
       // 解析数量槽（寛容）
@@ -40,7 +43,10 @@ module.exports = {
 
       if (Number.isNaN(quantity) || quantity < 1) {
         const speak = '申し訳ありません。個数がわかりませんでした。何個入れますか？';
-        return handlerInput.responseBuilder.speak(speak).reprompt('個数を教えてください。').getResponse();
+        const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
+        const card = buildGenericCard('個数が不明です', speak);
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, '個数が不明です', card);
+        return rb.reprompt('個数を教えてください。').getResponse();
       }
 
       const product = pendingData.product;
@@ -57,9 +63,13 @@ module.exports = {
       attributesManager.setSessionAttributes(sessionAttributes);
 
       const shortInfo = `${product.name}、メーカー：${product.brand}、価格：${product.price}円`;
-      const speak = `${shortInfo} を ${quantity} 個追加しました。合計で ${totalQuantity} 個になりました。現在カートには ${newCart.length} 件の商品があります。次にどうしますか？続けて別の商品を探す、カートを確認する、または配送便を選ぶことができます。カートを確認するなら「カートを見せて」、配送便を選ぶなら「配送便を見せて」と言ってください。どれにしますか？`;
+      const speak = `${shortInfo} を ${quantity} 個追加しました。合計で ${totalQuantity} 個になりました。現在カートには ${newCart.length} 件の商品があります。次にどうしますか？続けて別の商品を探す、カートを確認する、または配送便を選ぶことができます。カートを確認するなら「カートを見せて」、配送便を選ぶなら「配送時間を選んで」と言ってください。どれにしますか？`;
       const reprompt = '続けて買い物するなら商品名で探してください、カートを確認するなら「カートを見て」、配送の便を選ぶなら「配送時間を選んで」と言ってください。';
-      return handlerInput.responseBuilder.speak(speak).reprompt(reprompt).getResponse();
+
+      const { buildGenericCard, attachSpeechAndCard } = require('../utils/responseUtils');
+      const cardBody = buildGenericCard('カートに追加しました', `${shortInfo}\n数量: ${quantity}\n現在の合計個数: ${totalQuantity}\nカート内商品種類: ${newCart.length}`);
+      const rb = attachSpeechAndCard(handlerInput.responseBuilder, speak, 'カートに追加しました', cardBody);
+      return rb.reprompt(reprompt).getResponse();
     } finally {
       console.log('End handling ProvideAddQuantityIntentHandler');
     }

@@ -77,14 +77,20 @@ module.exports = {
         const reprompt = serviceResp.reprompt || '続けますか？';
         const shouldEnd = serviceResp.shouldEndSession === true;
 
-        const builder = handlerInput.responseBuilder.speak(speech);
-        if (!shouldEnd) builder.reprompt(reprompt); else builder.withShouldEndSession(true);
-        return builder.getResponse();
+        const { attachSpeechAndCard } = require('../utils/responseUtils');
+        const cardBody = serviceResp.products && serviceResp.products.length > 0
+          ? serviceResp.products.map((p, i) => `${i + 1}. ${p.name}  ${p.price || ''}円`).join('\n')
+          : (serviceResp.spokenResponse || '該当商品が見つかりませんでした。');
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, speech, '検索結果', cardBody);
+        if (!shouldEnd) rb.reprompt(reprompt); else rb.withShouldEndSession(true);
+        return rb.getResponse();
       } catch (e) {
         console.error('SearchProductIntent service error:', e);
         const spokenResponse = '申し訳ありません。現在リクエストを処理できません。少し時間をおいてもう一度お試しください。';
         const reprompt = '恐れ入りますが、もう一度お願いします。';
-        return handlerInput.responseBuilder.speak(spokenResponse).reprompt(reprompt).getResponse();
+        const { attachSpeechAndCard } = require('../utils/responseUtils');
+        const rb = attachSpeechAndCard(handlerInput.responseBuilder, spokenResponse, '検索エラー', spokenResponse);
+        return rb.reprompt(reprompt).getResponse();
       }
     } finally {
       console.log('End handling SearchProductIntentHandler');
