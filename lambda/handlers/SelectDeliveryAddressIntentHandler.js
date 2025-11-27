@@ -24,8 +24,8 @@ module.exports = {
       // Validate available addresses exist
       const available = sessionAttributes.availableDeliveryAddresses || [];
       if (!Array.isArray(available) || available.length === 0) {
-        const speak = '申し訳ありません。先に配送先を表示してください。どの配送先にしますか？';
-        return handlerInput.responseBuilder.speak(speak).reprompt('配送先を選択するには、一覧を表示してから番号でお答えください。').getResponse();
+        const speak = '申し訳ありません。先に届け先を検索してください。どの届け先にしますか？';
+        return handlerInput.responseBuilder.speak(speak).reprompt('届け先を選択するには、利用可能な届け先を検索してから番号でお答えください。').getResponse();
       }
 
       const idx = Number(numberValue);
@@ -40,10 +40,15 @@ module.exports = {
       // Clear temporary list
       delete sessionAttributes.availableDeliveryAddresses;
       sessionAttributes._cartDirty = true;
+      // Ask whether to check available promotions next (set pending to be handled by PendingConfirmationHandler)
+      sessionAttributes.pending = true;
+      sessionAttributes.pendingData = { kind: 'confirmCheckPromotions', addressIndex: idx };
+      // persist updated session
       attributesManager.setSessionAttributes(sessionAttributes);
 
-      const speak = `配送先を選択しました。${selected.spokenLabel} を配送先として設定しました。お支払いに進みますか？`;
-      return handlerInput.responseBuilder.speak(speak).reprompt('お支払いに進みますか？').getResponse();
+      const speak = `届け先を選択しました。${selected.spokenLabel} を届け先として設定しました。利用可能なクーポンを確認しますか？ はいで確認します、いいえでお支払いに進みます。`;
+      const reprompt = '利用可能なクーポンを確認しますか？ はい、またはいいえでお答えください。';
+      return handlerInput.responseBuilder.speak(speak).reprompt(reprompt).getResponse();
     } finally {
       console.log('End handling SelectDeliveryAddressIntentHandler');
     }

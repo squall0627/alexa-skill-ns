@@ -22,7 +22,7 @@ module.exports = {
 
       const cart = sessionAttributes.cart || [];
       if (!cart || cart.length === 0) {
-        const speak = 'カートに商品がありません。何を削除しますか？';
+        const speak = 'カートに商品がありません。ほかに何をしますか？';
         return handlerInput.responseBuilder.speak(speak).reprompt('ほかに何をしますか？').getResponse();
       }
 

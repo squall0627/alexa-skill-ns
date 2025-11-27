@@ -40,10 +40,24 @@ module.exports = {
 
       delete sessionAttributes.availableDeliverySlots;
       sessionAttributes._cartDirty = true;
+      // If delivery address not yet set, delegate immediately to SearchAvailableDeliveryAddressIntentHandler
+      if (!sessionAttributes.cartDeliveryAddress) {
+        attributesManager.setSessionAttributes(sessionAttributes);
+        // set lastAction so the address search handler behaves normally
+        sessionAttributes.lastAction = 'SearchAvailableDeliveryAddressIntent';
+        attributesManager.setSessionAttributes(sessionAttributes);
+        const SearchAvailableDeliveryAddressIntentHandler = require('./SearchAvailableDeliveryAddressIntentHandler');
+        return await SearchAvailableDeliveryAddressIntentHandler.handle(handlerInput);
+      }
+
+      // Address already set -> announce current address and ask whether to change it
+      sessionAttributes.pending = true;
+      sessionAttributes.pendingData = { kind: 'confirmSelectAddressAfterSlot', slotIndex: index };
       attributesManager.setSessionAttributes(sessionAttributes);
 
-      const speak = `配送枠を選択しました。${selected.spokenLabel} を選択しました。お支払いに進みますか、それとも他に追加しますか？`;
-      return handlerInput.responseBuilder.speak(speak).reprompt('お支払いに進みますか？').getResponse();
+      const speak = `配送枠を選択しました。${selected.spokenLabel} を選択しました。現在の届け先は ${sessionAttributes.cartDeliveryAddress.spokenLabel} です。変更しますか？ はいで変更、いいえでお支払いに進みます。`;
+      const reprompt = '届け先を変更しますか？ はい、またはいいえでお答えください。';
+      return handlerInput.responseBuilder.speak(speak).reprompt(reprompt).getResponse();
     } finally {
       console.log('End handling SelectDeliverySlotIntentHandler');
     }

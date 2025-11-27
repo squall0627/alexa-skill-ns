@@ -70,8 +70,9 @@ module.exports = {
         console.log(`[AddCartIntent] Session attributes updated:`, { cartSize: newCart.length, lastAction: sessionAttributes.lastAction });
 
         const shortInfo = `${product.name}、メーカー：${product.brand}、価格：${product.price}円`;
-        const speak = `${shortInfo} を ${quantity} 個追加しました。合計で ${totalQuantity} 個になりました。現在カートには ${newCart.length} 件の商品があります。続けて別の商品を検索しますか？`;
-        const reprompt = '続けて検索しますか？はいで続ける、いいえでカートを確認します。';
+        // 改訂：追加後のプロンプトで3つの選択肢を提示し、各操作の例を示す
+        const speak = `${shortInfo} を ${quantity} 個追加しました。合計で ${totalQuantity} 個になりました。現在カートには ${newCart.length} 件の商品があります。次にどうしますか？続けて別の商品を探す、カートを確認する、または配送便を選ぶことができます。カートを確認するなら「カートを見せて」、配送便を選ぶなら「配送便を見せて」と言ってください。どれにしますか？`;
+        const reprompt = '続けて買い物するなら商品名で探してください、カートを確認するなら「カートを見て」、配送の便を選ぶなら「配送時間を選んで」と言ってください。';
         return handlerInput.responseBuilder.speak(speak).reprompt(reprompt).getResponse();
       }
 

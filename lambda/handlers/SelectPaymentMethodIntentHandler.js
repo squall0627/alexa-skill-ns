@@ -57,8 +57,8 @@ module.exports = {
       sessionAttributes.pendingData = { kind: 'confirmShareholderCard' };
       sessionAttributes._cartDirty = true;
       attributesManager.setSessionAttributes(sessionAttributes);
-      const speak = `支払い方法を${selected.label}に設定しました。オーナーズカードをお持ちですか？ はい、またはいいえでお答えください。`;
-      return handlerInput.responseBuilder.speak(speak).reprompt('オーナーズカードをお持ちですか？').getResponse();
+      const speak = `支払い方法を${selected.label}に設定しました。オーナーズカードをお使いますか？ はい、またはいいえでお答えください。`;
+      return handlerInput.responseBuilder.speak(speak).reprompt('オーナーズカードをお使いますか？').getResponse();
     } finally {
       console.log('End handling SelectPaymentMethodIntentHandler');
     }

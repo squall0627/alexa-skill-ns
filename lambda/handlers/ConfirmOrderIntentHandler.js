@@ -19,7 +19,7 @@ module.exports = {
       // Build a readable order summary in Japanese
       const cart = sessionAttributes.cart || [];
       if (!Array.isArray(cart) || cart.length === 0) {
-        const speak = 'カートに商品がありません。注文を確定できません。ほかに何をしますか？';
+        const speak = 'カートに商品がありません。注文を確定できません。買い物するなら、「リンゴを探して」というふうに商品を検索してください？';
         return handlerInput.responseBuilder.speak(speak).reprompt('ほかに何をしますか？').getResponse();
       }
 
@@ -47,7 +47,7 @@ module.exports = {
       const computed = await PaymentService.computeFinalAmounts(attributesManager, sessionAttributes);
 
       // Assemble full summary
-      const speak = `ご注文の確認です。商品：${itemsText}。配達：${delivery}。クーポン：${promo}。お支払い方法：${methodLabel}。${waonUse}。${share}。${computed.summary} 注文を確定してよろしいですか？`;
+      const speak = `ご注文の確認です。商品：${itemsText}。配達：${delivery}。クーポン：${promo}。お支払い方法：${methodLabel}。${waonUse}。${share}。${computed.summary} 注文を確定してよろしいですか？はい、または、いいえ、で回答してください。`;
 
       // set pending for final confirmation handled by PendingConfirmationHandler
       sessionAttributes.pending = true;

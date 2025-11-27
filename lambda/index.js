@@ -15,7 +15,6 @@ const ProvideDeleteQuantityIntentHandler = require('./handlers/ProvideDeleteQuan
 const ViewCartIntentHandler = require('./handlers/ViewCartIntentHandler');
 const ClearCartIntentHandler = require('./handlers/ClearCartIntentHandler');
 const PendingConfirmationHandler = require('./handlers/PendingConfirmationHandler');
-const AfterAddDecisionHandler = require('./handlers/AfterAddDecisionHandler');
 const SearchAvailableDeliverySlotIntentHandler = require('./handlers/SearchAvailableDeliverySlotIntentHandler');
 const SelectDeliverySlotIntentHandler = require('./handlers/SelectDeliverySlotIntentHandler');
 const SearchAvailablePromotionIntentHandler = require('./handlers/SearchAvailablePromotionIntentHandler');
@@ -276,7 +275,6 @@ exports.handler = Alexa.SkillBuilders.custom()
         ViewCartIntentHandler,
         ClearCartIntentHandler,
         PendingConfirmationHandler,
-        AfterAddDecisionHandler,
         SearchAvailableDeliverySlotIntentHandler,
         SelectDeliverySlotIntentHandler,
         SearchAvailableDeliveryAddressIntentHandler,

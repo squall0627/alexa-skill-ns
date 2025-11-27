@@ -47,8 +47,14 @@ module.exports = {
       // // mark last action as this intent
       // markLastAction(handlerInput, 'SelectPromotionIntent');
 
-      const spoken = `${selected.name}を適用しました。${final.summary} ほかに何をしますか？`;
-      return handlerInput.responseBuilder.speak(spoken).reprompt('ほかに何をしますか？').getResponse();
+      // After applying the promotion, ask whether to proceed to payment
+      sessionAttributes.pending = true;
+      sessionAttributes.pendingData = { kind: 'confirmProceedToPayment' };
+      attributesManager.setSessionAttributes(sessionAttributes);
+
+      const spoken = `${selected.name}を適用しました。${final.summary} お支払いに進みますか？ はいでお支払いに進みます、いいえの場合はほかに何をしますかと教えてください。`;
+      const reprompt = 'お支払いに進みますか？ はい、またはいいえでお答えください。';
+      return handlerInput.responseBuilder.speak(spoken).reprompt(reprompt).getResponse();
     } finally {
       console.log('End handling SelectPromotionIntentHandler');
     }

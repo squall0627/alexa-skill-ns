@@ -45,7 +45,7 @@ module.exports = {
           const diff = (p.orderThreshold || 0) - calc.itemsTotal;
           return `${p.name}（合計${p.orderThreshold}円以上で${p.discountAmount}円引き）には、あと${diff}円のご購入で利用できます。`;
         }).join(' ');
-        const spoken = `現在の合計は${calc.itemsTotal}円です。${messages}`;
+        const spoken = `現在の合計金額は${calc.itemsTotal}円です。${messages}`;
         return handlerInput.responseBuilder.speak(spoken).reprompt('ほかに何をしますか？').getResponse();
       }
 
