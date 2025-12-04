@@ -16,10 +16,10 @@
     "ask-sdk-model": "^1.19.0",
     "aws-sdk": "^2.326.0",
     "dotenv": "^17.2.3",
-    "langchain": "^1.1.2",
+
     "luxon": "^3.4.0",
     "node-fetch": "^3.3.2",
-
+    "openai": "^4.104.0",
     "jiti": "^1.21.0"
   },
   "devDependencies": {
