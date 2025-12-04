@@ -6,6 +6,7 @@ class MockAIAdapter {
 
   // prompt: string -> return { intent: string, sample: string, confidence: number }
   async call(prompt) {
+      console.log('[MockAIAdapter] call with prompt:', prompt ? prompt : 0);
     const full = String(prompt || '');
     // try to extract the Conversation: ... Intents: block to avoid matching intent samples
     let convo = full;
