@@ -6,6 +6,7 @@
 const Alexa = require('ask-sdk-core');
 const { getPersistenceAdapter } = require('./adapters/PersistenceAdapterFactory');
 const CartPersistenceHelper = require('./utils/CartPersistenceHelper');
+const ConversationHistoryService = require('./services/ConversationHistoryService');
 
 const SearchProductIntentHandler = require('./handlers/SearchProductIntentHandler');
 const AddCartIntentHandler = require('./handlers/AddCartIntentHandler');
@@ -256,6 +257,138 @@ const SaveCartInterceptor = {
 };
 
 /**
+ * リクエスト前インターセプタ：永続ストレージから会話履歴を読み込み、セッション属性に設定する
+ * さらに、今回のユーザー発話（可能なら inputTranscript）をセッションと永続化に追加する
+ * すべてのコメントは日本語
+ */
+const RequestConversationInterceptor = {
+    async process(handlerInput) {
+        console.log('[RequestConversationInterceptor] 会話履歴をロードします（および今回のユーザー発話を追加します）');
+        try {
+            const attributesManager = handlerInput.attributesManager;
+            const sessionAttributes = attributesManager.getSessionAttributes() || {};
+
+            // 既存の永続化された履歴をセッションにロード
+            const history = await ConversationHistoryService.getHistory(attributesManager);
+            sessionAttributes.conversationHistory = history && history.entries ? history : { entries: [] };
+
+            // リクエストからユーザーの生の発話を抽出する。可能であれば inputTranscript を使い、なければ intent 名と slot 値でフォールバック
+            const request = handlerInput.requestEnvelope && handlerInput.requestEnvelope.request ? handlerInput.requestEnvelope.request : {};
+            let userText = null;
+            if (request.inputTranscript) {
+                userText = String(request.inputTranscript || '').trim();
+            } else if (request.type === 'IntentRequest' && request.intent) {
+                // slot の値を組み立てる
+                const slots = request.intent.slots || {};
+                const slotParts = Object.keys(slots || {}).map(key => {
+                    const s = slots[key];
+                    if (!s) return null;
+                    // slot value があるなら使う
+                    if (s.value) return `${key}:${s.value}`;
+                    return null;
+                }).filter(Boolean);
+                userText = `Intent:${request.intent.name}` + (slotParts.length ? ` (${slotParts.join(', ')})` : '');
+            } else if (request.type) {
+                userText = request.type;
+            }
+
+            // セッションに今回のユーザー発話を保存（存在するなら追加）
+            if (userText) {
+                const ts = new Date().toISOString();
+                const entry = { role: 'USER', text: String(userText), timestamp: ts };
+
+                sessionAttributes.conversationHistory.entries = sessionAttributes.conversationHistory.entries.concat([entry]);
+                // トリムは ConversationHistoryService 側でも行われるが、セッション側でも念のため最後だけ保持
+                if (sessionAttributes.conversationHistory.entries.length > 50) {
+                    sessionAttributes.conversationHistory.entries = sessionAttributes.conversationHistory.entries.slice(-50);
+                }
+
+                // セッションに保存
+                attributesManager.setSessionAttributes(sessionAttributes);
+
+                // 永続化も行う（ConversationHistoryService.appendEntry を使用）
+                try {
+                    await ConversationHistoryService.appendEntry(attributesManager, 'USER', userText);
+                    console.log('[RequestConversationInterceptor] ユーザー発話を永続化しました');
+                } catch (e) {
+                    console.log(`[RequestConversationInterceptor] appendEntry エラー: ${e}`);
+                }
+            } else {
+                // 発話が取得できない場合はロードのみ行う
+                attributesManager.setSessionAttributes(sessionAttributes);
+                console.log('[RequestConversationInterceptor] ユーザー発話が見つかりませんでした。ロードのみ実施');
+            }
+
+            // フラグを付けてロード済みを示す（将来のロジックで利用可能）
+            sessionAttributes._conversationLoaded = true;
+            attributesManager.setSessionAttributes(sessionAttributes);
+            console.log('[RequestConversationInterceptor] 会話履歴をセッションにセットしました');
+        } catch (error) {
+            console.log(`[RequestConversationInterceptor] 会話履歴のロード中にエラー: ${error}`);
+        }
+    }
+};
+
+/**
+ * レスポンス後インターセプタ：セッション内の会話履歴に Alexa の応答を追加し、ConversationHistoryService.appendEntry で永続化する
+ * process のシグネチャは (handlerInput, response) を受け取る
+ */
+const ResponseConversationInterceptor = {
+    async process(handlerInput, response) {
+        console.log('[ResponseConversationInterceptor] 会話履歴の永続化（Alexa の応答を追加）をチェックします');
+        try {
+            const attributesManager = handlerInput.attributesManager;
+            const sessionAttributes = attributesManager.getSessionAttributes() || {};
+
+            if (!sessionAttributes.conversationHistory || !Array.isArray(sessionAttributes.conversationHistory.entries)) {
+                sessionAttributes.conversationHistory = { entries: [] };
+            }
+
+            // response オブジェクトから Alexa の発話テキストを抽出する
+            let alexaText = null;
+            if (response) {
+                // outputSpeech は { type: 'SSML'|'PlainText', ssml?: '', text?: '' } の形
+                const out = response.outputSpeech || response.outputSpeech || null;
+                if (out) {
+                    if (typeof out === 'string') {
+                        alexaText = out;
+                    } else {
+                        alexaText = out.ssml || out.text || null;
+                    }
+                }
+
+                // もし outputSpeech が取得できなければ、response.directives や card を探したり、handlerInput.responseBuilder の内部を参照することも可能だが
+                // この実装では outputSpeech ベースで抽出する。存在しない場合は保存をスキップする。
+            }
+
+            if (alexaText) {
+                // セッション側に追加
+                const ts = new Date().toISOString();
+                const entry = { role: 'ALEXA', text: String(alexaText), timestamp: ts };
+                sessionAttributes.conversationHistory.entries = sessionAttributes.conversationHistory.entries.concat([entry]);
+                // 過度な増加を抑える（任意の上限）
+                if (sessionAttributes.conversationHistory.entries.length > 50) {
+                    sessionAttributes.conversationHistory.entries = sessionAttributes.conversationHistory.entries.slice(-50);
+                }
+                attributesManager.setSessionAttributes(sessionAttributes);
+
+                // 永続化を appendEntry で行う
+                try {
+                    await ConversationHistoryService.appendEntry(attributesManager, 'ALEXA', alexaText);
+                    console.log('[ResponseConversationInterceptor] Alexa の応答を永続化しました');
+                } catch (e) {
+                    console.log(`[ResponseConversationInterceptor] appendEntry エラー: ${e}`);
+                }
+            } else {
+                console.log('[ResponseConversationInterceptor] response に outputSpeech が含まれていないため、会話履歴の保存をスキップします');
+            }
+        } catch (error) {
+            console.log(`[ResponseConversationInterceptor] 会話履歴の保存中にエラー: ${error}`);
+        }
+    }
+};
+
+/**
  * This handler acts as the entry point for your skill, routing all request and response
  * payloads to the handlers above. Make sure any new handlers or interceptors you've
  * defined are included below. The order matters - they're processed top to bottom 
@@ -287,9 +420,10 @@ exports.handler = Alexa.SkillBuilders.custom()
         ConfirmOrderIntentHandler,
         StopOrderHandler,
         NumberOnlyIntentHandler,
+        AIFallbackHandler,
         IntentReflectorHandler)
-    .addRequestInterceptors(LoadCartInterceptor)
-    .addResponseInterceptors(SaveCartInterceptor)
+    .addRequestInterceptors(LoadCartInterceptor, RequestConversationInterceptor)
+    .addResponseInterceptors(SaveCartInterceptor, ResponseConversationInterceptor)
     .addErrorHandlers(ErrorHandler)
     .withPersistenceAdapter(getPersistenceAdapter())
     .withCustomUserAgent('sample/hello-world/v1.2')
@@ -297,3 +431,5 @@ exports.handler = Alexa.SkillBuilders.custom()
 
 // Export LoadCartInterceptor for testing purposes
 module.exports.LoadCartInterceptor = LoadCartInterceptor;
+module.exports.RequestConversationInterceptor = RequestConversationInterceptor;
+module.exports.ResponseConversationInterceptor = ResponseConversationInterceptor;

@@ -30,6 +30,13 @@ async function stopOrder(attributesManager) {
   delete sessionAttributes.pendingData;
 
   attributesManager.setSessionAttributes(sessionAttributes);
+  // 会話履歴も削除する
+  try {
+    const ConversationHistoryService = require('../services/ConversationHistoryService');
+    await ConversationHistoryService.clearHistory(attributesManager);
+  } catch (e) {
+    console.log('[orderUtils] Failed to clear conversation history:', e);
+  }
 }
 
 function clearCartSession(attributesManager) {
