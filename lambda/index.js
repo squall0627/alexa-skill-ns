@@ -423,7 +423,9 @@ exports.handler = Alexa.SkillBuilders.custom()
         NumberOnlyIntentHandler,
         AIFallbackHandler,
         IntentReflectorHandler)
+    .addRequestInterceptors(LoadCartInterceptor)
     .addRequestInterceptors(RequestConversationInterceptor)
+    .addResponseInterceptors(SaveCartInterceptor)
     .addResponseInterceptors(ResponseConversationInterceptor)
     .addErrorHandlers(ErrorHandler)
     .withPersistenceAdapter(getPersistenceAdapter())
