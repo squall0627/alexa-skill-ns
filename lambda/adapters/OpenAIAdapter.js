@@ -24,63 +24,7 @@ const fs = require('fs');
 const path = require('path');
 const { promisify } = require('util');
 const AWS = require('aws-sdk');
-const jiti = require('jiti')(__filename);
-
-let ChatOpenAI = null;
-const openAIModuleCache = {};
-let chatCtorPromise = null;
-
-function tryRequire(modulePath) {
-  try {
-    if (!openAIModuleCache[modulePath]) {
-      openAIModuleCache[modulePath] = require(modulePath);
-    }
-    return openAIModuleCache[modulePath];
-  } catch (err) {
-    if (process.env.DEBUG_AI) {
-      console.log(`[OpenAIAdapter] require(${modulePath}) 失敗:`, err && err.message ? err.message : err);
-    }
-    try {
-      if (!openAIModuleCache[modulePath]) {
-        openAIModuleCache[modulePath] = jiti(modulePath);
-      }
-      if (process.env.DEBUG_AI) {
-        console.log(`[OpenAIAdapter] jiti(${modulePath}) 成功`);
-      }
-      return openAIModuleCache[modulePath];
-    } catch (err2) {
-      if (process.env.DEBUG_AI) {
-        console.log(`[OpenAIAdapter] jiti(${modulePath}) 失敗:`, err2 && err2.message ? err2.message : err2);
-      }
-      return null;
-    }
-  }
-}
-
-async function loadChatOpenAI() {
-  if (ChatOpenAI) return ChatOpenAI;
-  if (chatCtorPromise) return chatCtorPromise;
-  const candidateFns = [
-    async () => tryRequire('@langchain/openai')?.ChatOpenAI,
-    async () => tryRequire('@langchain/openai/dist/index.cjs')?.ChatOpenAI,
-    async () => {
-      const cjsPath = path.join(__dirname, '..', 'node_modules', '@langchain', 'openai', 'dist', 'index.cjs');
-      return fs.existsSync(cjsPath) ? tryRequire(cjsPath)?.ChatOpenAI : null;
-    }
-  ];
-  chatCtorPromise = (async () => {
-    for (const factory of candidateFns) {
-      const candidate = await factory();
-      if (candidate) {
-        ChatOpenAI = candidate;
-        break;
-      }
-    }
-    return ChatOpenAI;
-  })();
-
-  return chatCtorPromise;
-}
+const OpenAI = require('openai');
 
 (function hydrateEnv() {
   try {
@@ -96,6 +40,8 @@ async function loadChatOpenAI() {
 const DEFAULT_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 const DEFAULT_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || 10000);
 const DEFAULT_MAX_TOKENS = Number(process.env.OPENAI_MAX_TOKENS || 300);
+const DEFAULT_REASONING_BUFFER = Number(process.env.OPENAI_REASONING_BUFFER || 512);
+const DEFAULT_INCOMPLETE_RETRIES = Number(process.env.OPENAI_INCOMPLETE_RETRIES || 1);
 const GPT5_MODALITY_BLOCKLIST = ['gpt-5-nano', 'gpt-5-mini'];
 const JSON_RESPONSE_HINTS = ['gpt-4o', 'gpt-4.1', 'gpt-4.8', 'gpt-5'];
 
@@ -197,10 +143,43 @@ function shouldSkipTemperature(modelName) {
   return /gpt-5/i.test(modelName);
 }
 
-function normalizeContent(message) {
+function collectResponseOutput(payload) {
+  if (!payload) return null;
+  if (typeof payload.output_text === 'string' && payload.output_text.trim().length > 0) {
+    return payload.output_text;
+  }
+  const segments = [];
+  if (Array.isArray(payload.output)) {
+    for (const item of payload.output) {
+      if (!item) continue;
+      if (Array.isArray(item.content)) {
+        for (const part of item.content) {
+          if (!part) continue;
+          if (part.type === 'output_text' && part.text) {
+            segments.push(typeof part.text === 'string' ? part.text : part.text.value || '');
+          } else if (part.type === 'text' && part.text) {
+            segments.push(typeof part.text === 'string' ? part.text : part.text.value || '');
+          }
+        }
+      } else if (item.type === 'output_text' && item.text) {
+        segments.push(typeof item.text === 'string' ? item.text : item.text.value || '');
+      }
+    }
+  }
+  if (!segments.length && Array.isArray(payload.choices)) {
+    const choice = payload.choices[0];
+    if (choice && choice.message && choice.message.content) {
+      return flattenMessageContent(choice.message.content);
+    }
+  }
+  const combined = segments.join('\n').trim();
+  return combined.length ? combined : null;
+}
+
+function flattenMessageContent(message) {
   if (!message) return '';
   if (typeof message === 'string') return message;
-  if (Array.isArray(message)) return message.map(normalizeContent).join('\n');
+  if (Array.isArray(message)) return message.map(flattenMessageContent).join('\n');
   if (typeof message.content === 'string') return message.content;
   if (Array.isArray(message.content)) {
     return message.content.map(part => {
@@ -208,7 +187,7 @@ function normalizeContent(message) {
       if (typeof part === 'string') return part;
       if (typeof part.text === 'string') return part.text;
       if (typeof part.value === 'string') return part.value;
-      if (part.content) return normalizeContent(part.content);
+      if (part.content) return flattenMessageContent(part.content);
       return '';
     }).join('');
   }
@@ -217,7 +196,7 @@ function normalizeContent(message) {
   if (message.generations && Array.isArray(message.generations)) {
     const first = message.generations[0];
     if (Array.isArray(first) && first[0]) {
-      return normalizeContent(first[0]);
+      return flattenMessageContent(first[0]);
     }
   }
   try {
@@ -225,6 +204,12 @@ function normalizeContent(message) {
   } catch (err) {
     return String(message);
   }
+}
+
+function normalizeContent(message) {
+  const responseText = collectResponseOutput(message);
+  if (responseText) return responseText;
+  return flattenMessageContent(message);
 }
 
 function extractJsonWithIntent(rawText) {
@@ -261,7 +246,10 @@ function normalizeResult(rawText, rawError) {
     return base;
   }
   if (dbg) console.log('[OpenAIAdapter] normalizeResult: rawText snippet=', rawText.slice(0, 200));
-  const parsed = extractJsonWithIntent(rawText);
+  let parsed = extractJsonWithIntent(rawText);
+  if (!parsed) {
+    parsed = tryAppendClosingBrace(rawText);
+  }
   if (!parsed) {
     if (dbg) console.log('[OpenAIAdapter] normalizeResult: JSON parse failed');
     return { ...base, sample: rawText.slice(0, 500), raw: rawText };
@@ -276,100 +264,155 @@ function normalizeResult(rawText, rawError) {
   return normalized;
 }
 
+function tryAppendClosingBrace(rawText) {
+  if (typeof rawText !== 'string') return null;
+  const trimmed = rawText.trim();
+  if (!trimmed.startsWith('{') || trimmed.endsWith('}')) return null;
+  try {
+    return JSON.parse(trimmed + '}');
+  } catch (err) {
+    return null;
+  }
+}
+
+function isIncompleteMaxTokens(response) {
+  if (!response || typeof response !== 'object') return false;
+  const reason = response?.incomplete_details?.reason;
+  return response.status === 'incomplete' && reason === 'max_output_tokens';
+}
+
 class OpenAIAdapter {
   constructor(apiKey) {
     this.apiKey = apiKey || process.env.OPENAI_API_KEY || null;
     this.modelName = process.env.OPENAI_MODEL || DEFAULT_MODEL;
     this.timeoutMs = DEFAULT_TIMEOUT_MS;
     this.maxTokens = DEFAULT_MAX_TOKENS;
-    this.chat = null;
+    this.reasoningTokenBuffer = DEFAULT_REASONING_BUFFER;
+    this.client = null;
     this.omitModalities = false;
+    this.lastPartialOutput = null;
   }
 
   async initIfNeeded() {
-    if (this.chat) return;
+    if (this.client) return;
     this.apiKey = await resolveApiKey(this.apiKey);
     if (!this.apiKey) {
       throw new Error('OpenAI API キーが見つかりません。OPENAI_API_KEY か OPENAI_SECRET_NAME を設定してください。');
     }
-    const ChatCtor = await loadChatOpenAI();
-    if (!ChatCtor) {
-      throw new Error('@langchain/openai もしくは langchain/chat_models/openai の読み込みに失敗しました。lambda ディレクトリで npm install を実行し、テスト時は node_modules が解決可能か確認してください。');
-    }
-    const options = {
-      modelName: this.modelName,
-      openAIApiKey: this.apiKey,
-      maxTokens: this.maxTokens,
-      timeout: this.timeoutMs
+    this.client = new OpenAI({ apiKey: this.apiKey });
+  }
+
+  buildRequestBody(prompt) {
+    const outputLimit = Math.max(1, this.maxTokens + Math.max(0, this.reasoningTokenBuffer));
+    const body = {
+      model: this.modelName,
+      input: prompt,
+      max_output_tokens: outputLimit
     };
     if (!shouldSkipTemperature(this.modelName)) {
-      options.temperature = 0;
+      body.temperature = 0;
     }
-    const allowModalities = supportsModalities(this.modelName, this.omitModalities);
-    if (allowModalities) {
-      options.modelKwargs = Object.assign({}, options.modelKwargs, { modalities: ['text'] });
+    if (supportsModalities(this.modelName, this.omitModalities)) {
+      body.modalities = ['text'];
     }
     if (supportsJsonResponse(this.modelName)) {
-      options.modelKwargs = Object.assign({}, options.modelKwargs, { response_format: { type: 'json_object' } });
+      body.text = Object.assign({}, body.text, { format: { type: 'json_object' } });
     }
-    this.chat = new ChatCtor(options);
+    return body;
   }
 
   async invokeWithTimeout(prompt) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
-      if (typeof this.chat.invoke === 'function') {
-        return await this.chat.invoke(prompt, { signal: controller.signal });
+      const body = this.buildRequestBody(prompt);
+      const res = await this.client.responses.create(body, { signal: controller.signal });
+      if (res && res.output_text) {
+        this.lastPartialOutput = res.output_text;
       }
-      if (typeof this.chat.call === 'function') {
-        return await this.chat.call(prompt, { signal: controller.signal });
+      if (res && res.output && res.status === 'incomplete' && res.incomplete_details && res.incomplete_details.reason === 'max_output_tokens') {
+        if (process.env.DEBUG_AI) {
+          console.log('[OpenAIAdapter] Responses API returned incomplete output due to token limit. Using partial output_text if available.');
+        }
+        if (this.lastPartialOutput) {
+          return this.lastPartialOutput;
+        }
       }
-      if (typeof this.chat.generate === 'function') {
-        const res = await this.chat.generate([prompt], { signal: controller.signal });
-        return res && res.generations && res.generations[0] && res.generations[0][0];
+      return res;
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        throw new Error(`OpenAI リクエストがタイムアウトしました。(${this.timeoutMs}ms)`);
       }
-      throw new Error('ChatOpenAI インスタンスが無効な形です。');
+      throw err;
     } finally {
       clearTimeout(timer);
     }
   }
 
+  buildContentFromRaw(raw) {
+    if (typeof raw === 'string') {
+      return raw;
+    }
+    return normalizeContent(raw);
+  }
+
+  normalizeResponse(raw) {
+    const content = this.buildContentFromRaw(raw) || '';
+    if (process.env.DEBUG_AI) {
+      console.log('[OpenAIAdapter] call: raw content snippet=', content.slice(0, 400));
+    }
+    return normalizeResult(content);
+  }
+
   async call(prompt) {
     await this.initIfNeeded();
-    try {
-      if (process.env.DEBUG_AI) {
-        console.log('[OpenAIAdapter] call: model=', this.modelName);
-        console.log('[OpenAIAdapter] call: prompt preview=', prompt.slice(0, 400));
-      }
-      const aiMessage = await this.invokeWithTimeout(prompt);
-      if (process.env.DEBUG_AI) {
-          console.log('[OpenAIAdapter] call: raw aiMessage=', aiMessage);
-      }
-      const content = normalizeContent(aiMessage);
-      if (process.env.DEBUG_AI) {
-        console.log('[OpenAIAdapter] call: raw content snippet=', (content || '').slice(0, 400));
-      }
-      return normalizeResult(content);
-    } catch (err) {
-      if (err && err.name === 'AbortError') {
-        console.log('[OpenAIAdapter] タイムアウトで中断しました');
-        return normalizeResult('', 'timeout');
-      }
-      if (isModalitiesError(err) && !this.omitModalities) {
+    const retries = Math.max(0, DEFAULT_INCOMPLETE_RETRIES);
+    let lastError = null;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
         if (process.env.DEBUG_AI) {
-          console.log('[OpenAIAdapter] modalities エラーを検出。パラメータを削除して再試行します。');
+          console.log(`[OpenAIAdapter] call attempt ${attempt + 1}/${retries + 1}: model=`, this.modelName);
+          console.log('[OpenAIAdapter] call: prompt preview=', prompt.slice(0, 400));
         }
-        this.omitModalities = true;
-        this.chat = null;
-        return this.call(prompt);
+        const rawResponse = await this.invokeWithTimeout(prompt);
+        if (!rawResponse) {
+          continue;
+        }
+        if (typeof rawResponse !== 'string' && isIncompleteMaxTokens(rawResponse)) {
+          if (process.env.DEBUG_AI) {
+            console.log('[OpenAIAdapter] 不完全な応答を検出しました (max_output_tokens)。再試行します...');
+          }
+          continue;
+        }
+        if (process.env.DEBUG_AI) {
+          console.log('[OpenAIAdapter] call: raw aiMessage=', rawResponse);
+        }
+        return this.normalizeResponse(rawResponse);
+      } catch (err) {
+        lastError = err;
+        if (err && err.name === 'AbortError') {
+          console.log('[OpenAIAdapter] タイムアウトで中断しました');
+          return normalizeResult('', 'timeout');
+        }
+        if (isModalitiesError(err) && !this.omitModalities) {
+          if (process.env.DEBUG_AI) {
+            console.log('[OpenAIAdapter] modalities エラーを検出。パラメータを削除して再試行します。');
+          }
+          this.omitModalities = true;
+          continue;
+        }
+        console.log('[OpenAIAdapter] OpenAI API 呼び出し中の例外:', err && err.message ? err.message : err);
+        if (process.env.DEBUG_AI) {
+          console.log('[OpenAIAdapter] OpenAI API 呼び出し中の例外詳細:', err);
+        }
       }
-      console.log('[OpenAIAdapter] LangChain 呼び出し中の例外:', err && err.message ? err.message : err);
-      if (process.env.DEBUG_AI) {
-        console.log('[OpenAIAdapter] LangChain 呼び出し中の例外詳細:', err);
-      }
-      return normalizeResult('', err && err.message ? err.message : 'unknown-error');
     }
+    const fallbackError = lastError && lastError.message ? lastError.message : 'unknown-error';
+    return normalizeResult('', fallbackError);
+  }
+
+  get lastOutput() {
+    return this.lastPartialOutput;
   }
 }
 
