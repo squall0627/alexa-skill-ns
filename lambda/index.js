@@ -28,6 +28,7 @@ const StartPaymentIntentHandler = require('./handlers/StartPaymentIntentHandler'
 const SelectPaymentMethodIntentHandler = require('./handlers/SelectPaymentMethodIntentHandler');
 const SpecifyWaonPointsIntentHandler = require('./handlers/SpecifyWaonPointsIntentHandler');
 const ConfirmOrderIntentHandler = require('./handlers/ConfirmOrderIntentHandler');
+const AIFallbackHandler = require('./handlers/AIFallbackHandler');
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
