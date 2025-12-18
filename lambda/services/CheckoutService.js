@@ -47,15 +47,15 @@ class CheckoutService {
 
   /**
    * 指定のプロモーションを適用して最終金額を返す
-   * appliedPromo: { promoId, name, orderThreshold, discountAmount }
+   * appliedPromo: { promoId, name, orderThreshold, amount }
    */
   async finalize(cart = [], deliveryFee = 0, appliedPromo = null) {
     const base = await this.calculate(cart, deliveryFee);
     let discount = 0;
     let applied = null;
-    if (appliedPromo && appliedPromo.discountAmount) {
+    if (appliedPromo && appliedPromo.amount) {
       // 利用可能である前提（呼び出し元で検証すること）
-      discount = appliedPromo.discountAmount;
+      discount = appliedPromo.amount;
       applied = appliedPromo;
     }
 
