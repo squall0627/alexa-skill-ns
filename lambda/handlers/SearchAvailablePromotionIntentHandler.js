@@ -48,8 +48,9 @@ module.exports = {
         }
         // 提示どのくらい追加購入すれば良いかを案内（最小閾値との差分）
         const messages = notReached.map(p => {
+          p.amount = undefined;
           const diff = (p.orderThreshold || 0) - calc.itemsTotal;
-          return `${p.name}（合計${p.orderThreshold}円以上で${p.discountAmount}円引き）には、あと${diff}円のご購入で利用できます。`;
+          return `${p.name}（合計${p.orderThreshold}円以上で${p.amount}円引き）には、あと${diff}円のご購入で利用できます。`;
         }).join(' ');
         const spoken = `現在の合計金額は${calc.itemsTotal}円です。${messages}`;
         const { attachSpeechAndCard, buildGenericCard } = require('../utils/responseUtils');
@@ -62,7 +63,7 @@ module.exports = {
       const promos = calc.availablePromos;
 
       // try to construct SSML using say-as for amounts
-      const ssmlItems = promos.map((p, i) => `<s>番号${i + 1}、${p.name}、<say-as interpret-as="cardinal">${p.discountAmount}</say-as>円引き（条件<say-as interpret-as="cardinal">${p.orderThreshold}</say-as>円以上）</s>`).join('<break time="300ms"/>');
+      const ssmlItems = promos.map((p, i) => `<s>番号${i + 1}、${p.name}、<say-as interpret-as="cardinal">${p.amount}</say-as>円引き（条件<say-as interpret-as="cardinal">${p.orderThreshold}</say-as>円以上）</s>`).join('<break time="300ms"/>');
       const ssml = `<speak>利用可能なクーポンがあります：${ssmlItems}<break time="300ms"/>どのクーポンを利用しますか？ 番号で教えてください。</speak>`;
 
       // セッションに利用候補を保存

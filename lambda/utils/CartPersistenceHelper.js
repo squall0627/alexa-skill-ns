@@ -25,7 +25,7 @@ function buildCartData(sessionAttributes) {
       id: p.id || p.promoId || null,
       name: p.name || p.label || null,
       // keep any numeric discount or percent if available
-      amount: (typeof p.amount === 'number') ? p.amount : (typeof p.discountAmount === 'number' ? p.discountAmount : null),
+      amount: (typeof p.amount === 'number') ? p.amount : null,
       percent: (typeof p.percent === 'number') ? p.percent : null
     };
   }
