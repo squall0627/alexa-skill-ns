@@ -21,7 +21,7 @@ module.exports = {
       const sessionId = requestEnvelope.session ? requestEnvelope.session.sessionId : 'unknown';
       const attributesManager = handlerInput.attributesManager;
       const sessionAttributes = attributesManager.getSessionAttributes() || {};
-      // mark last action as this intent via helper
+      // ヘルパーを使ってこのインテントを lastAction にマーク
       markLastAction(handlerInput, 'SearchProductIntent');
 
       try {

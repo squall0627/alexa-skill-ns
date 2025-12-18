@@ -1,7 +1,7 @@
 /* *
- * This sample demonstrates handling intents from an Alexa skill using the Alexa Skills Kit SDK (v2).
- * Please visit https://alexa.design/cookbook for additional examples on implementing slots, dialog management,
- * session persistence, api calls, and more.
+ * Alexa Skills Kit SDK (v2) を使用してインテントを処理するサンプルです。
+ * 詳細な実装例（スロット、ダイアログ管理、セッション永続化、API 呼び出しなど）については
+ * https://alexa.design/cookbook を参照してください。
  * */
 const Alexa = require('ask-sdk-core');
 const { getPersistenceAdapter } = require('./adapters/PersistenceAdapterFactory');
@@ -104,10 +104,10 @@ const CancelAndStopIntentHandler = {
             .getResponse();
     }
 };
+
 /* *
- * FallbackIntent triggers when a customer says something that doesn’t map to any intents in your skill
- * It must also be defined in the language model (if the locale supports it)
- * This handler can be safely added but will be ingnored in locales that do not support it yet 
+ * FallbackIntent は、ユーザー発話がスキルのインテントモデルにマップされない場合にトリガーされます。
+ * ロケールがサポートしていない場合はこのハンドラは無視されます。
  * */
 const FallbackIntentHandler = {
     canHandle(handlerInput) {
@@ -124,10 +124,10 @@ const FallbackIntentHandler = {
             .getResponse();
     }
 };
+
 /* *
- * SessionEndedRequest notifies that a session was ended. This handler will be triggered when a currently open 
- * session is closed for one of the following reasons: 1) The user says "exit" or "quit". 2) The user does not 
- * respond or says something that does not match an intent defined in your voice model. 3) An error occurs 
+ * SessionEndedRequest はセッションが終了したことを通知します。次のような理由でトリガーされます：
+ * 1) ユーザーが "exit" や "quit" と言ったとき。 2) ユーザーが応答しないか、意図に一致しない発話をしたとき。 3) エラーが発生したとき。
  * */
 const SessionEndedRequestHandler = {
     canHandle(handlerInput) {
@@ -135,14 +135,15 @@ const SessionEndedRequestHandler = {
     },
     handle(handlerInput) {
         console.log(`~~~~ Session ended: ${JSON.stringify(handlerInput.requestEnvelope)}`);
-        // Any cleanup logic goes here.
-        return handlerInput.responseBuilder.getResponse(); // notice we send an empty response
+        // クリーンアップ用のロジックをここに記述します。
+        return handlerInput.responseBuilder.getResponse(); // 空のレスポンスを送信します
     }
 };
+
 /* *
- * The intent reflector is used for interaction model testing and debugging.
- * It will simply repeat the intent the user said. You can create custom handlers for your intents 
- * by defining them above, then also adding them to the request handler chain below 
+ * IntentReflectorHandler はインタラクションモデルのテストとデバッグ用です。
+ * 受け取ったインテント名をそのまま返します。上にカスタムハンドラを追加して、
+ * 下のリクエストハンドラーチェーンにも追加してください。順序は上から下に処理されます。
  * */
 const IntentReflectorHandler = {
     canHandle(handlerInput) {
@@ -159,10 +160,11 @@ const IntentReflectorHandler = {
             .getResponse();
     }
 };
+
 /* *
- * Generic error handling to capture any syntax or routing errors. If you receive an error
- * stating the request handler chain is not found, you have not implemented a handler for
- * the intent being invoked or included it in the skill builder below 
+ * 汎用的なエラーハンドラ。構文やルーティングのエラーを捕捉します。
+ * request handler chain が見つからないというエラーが出る場合は、
+ * 当該インテントに対するハンドラが未実装、またはスキルビルダーに追加されていない可能性があります。
  * */
 const ErrorHandler = {
     canHandle() {

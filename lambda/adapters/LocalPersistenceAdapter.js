@@ -1,14 +1,14 @@
 /**
  * LocalPersistenceAdapter.js
- * 用于本地开发和 Lambda 模拟器的持久化适配器
- * 将数据保存到文件系统 (/tmp 或相对路径) 而不是 DynamoDB
+ * ローカル開発および Lambda シミュレータ用の永続化アダプタ
+ * データを DynamoDB の代わりにファイルシステム（/tmp または相対パス）に保存します
  */
 
 const fs = require('fs');
 const path = require('path');
 
-// 在 Lambda 环境中只能使用 /tmp 目录
-// 在本地开发中使用相对路径的 data 目录
+// Lambda 環境では /tmp ディレクトリのみが使用可能
+// ローカル開発では相対パスの data ディレクトリを使用
 const isLambda = process.env.AWS_LAMBDA_FUNCTION_NAME !== undefined;
 const DATA_DIR = isLambda 
     ? '/tmp/alexa-sessions'
@@ -17,7 +17,7 @@ const SESSION_FILE = path.join(DATA_DIR, 'sessions.json');
 
 console.log(`[LocalPersistenceAdapter] Using data directory: ${DATA_DIR}`);
 
-// 确保数据目录存在
+// データディレクトリの存在を確認
 try {
     if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -27,7 +27,7 @@ try {
     console.error(`[LocalPersistenceAdapter] Failed to create data directory: ${error.message}`);
 }
 
-// 初始化或加载已有的会话数据
+// セッションデータを初期化または既存ファイルからロード
 let sessionData = {};
 try {
     if (fs.existsSync(SESSION_FILE)) {
@@ -70,17 +70,17 @@ class LocalPersistenceAdapter {
             
             sessionData[userId] = attributes;
             
-            // 确保目录存在
+            // ディレクトリが存在することを確認
             if (!fs.existsSync(DATA_DIR)) {
                 fs.mkdirSync(DATA_DIR, { recursive: true });
             }
             
-            // 写入文件
+            // ファイルに書き込む
             fs.writeFileSync(SESSION_FILE, JSON.stringify(sessionData, null, 2), 'utf8');
             console.log(`[LocalPersistenceAdapter] Attributes saved successfully for ${userId}`);
         } catch (error) {
             console.error(`[LocalPersistenceAdapter] Error saving attributes: ${error.message}`);
-            // 在 Lambda 中如果 /tmp 不可用，只在内存中保存
+            // Lambda で /tmp が使えない場合はメモリ上のみ保存される可能性があります
             console.warn(`[LocalPersistenceAdapter] Warning: Data may not persist between invocations`);
         }
     }

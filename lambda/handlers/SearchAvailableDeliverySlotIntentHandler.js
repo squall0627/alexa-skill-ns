@@ -1,5 +1,5 @@
-// lambda/handlers/SearchAvailableDeliverySlotIntentHandler.js
-// 日本語：利用可能な配送枠を検索して提示するハンドラ（原 SelectDeliverySlotIntentHandler -> 重命名）
+// 利用可能配送枠検索ハンドラ（SearchAvailableDeliverySlotIntentHandler）
+// 指定条件に基づいて利用できる配送枠を検索し、上位候補を提示するハンドラ
 const Alexa = require('ask-sdk-core');
 const DeliverySlotService = require('../services/DeliverySlotService');
 

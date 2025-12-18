@@ -1,5 +1,5 @@
-// lambda/services/CheckoutService.js
-// 日本語: 注文の合計を計算するサービス（商品に促销价がある場合はそれを使う）
+// チェックアウトサービス（CheckoutService）
+// 日本語: カートの内容と配送料から合計金額を計算するサービス
 
 const TableHandler = require('../tables/TableHandler');
 const productsTable = new TableHandler('products');

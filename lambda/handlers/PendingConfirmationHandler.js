@@ -1,5 +1,5 @@
-// lambda/handlers/PendingConfirmationHandler.js
-// 日本語：降級確認（pendingClearCart / pendingCancelOrder）時に Yes/No を処理するハンドラ
+// 保留確認ハンドラ（PendingConfirmationHandler）
+// 汎用の Yes/No 確認を処理し、pendingData.kind に応じた分岐を行うハンドラ
 const Alexa = require('ask-sdk-core');
 const DeliveryAddressService = require('../services/DeliveryAddressService');
 const PaymentService = require('../services/PaymentService');
@@ -11,30 +11,19 @@ module.exports = {
     const intentName = Alexa.getIntentName(request);
     if (intentName !== 'AMAZON.YesIntent' && intentName !== 'AMAZON.NoIntent') return false;
     const sessionAttributes = handlerInput.attributesManager.getSessionAttributes() || {};
-    // handle only when generic pending flag is set and lastAction indicates a confirmation-type intent
+    // 汎用の pending フラグが立っており、lastAction が確認系のインテントであるときのみ処理する
     const pendingData = sessionAttributes.pendingData || {};
-    // return Boolean(sessionAttributes.pending && (
-    //   (sessionAttributes.lastAction === 'ClearCartIntent' && pendingData.kind === 'clearCart') ||
-    //   (sessionAttributes.lastAction === 'StopOrderIntent' && pendingData.kind === 'stopOrder') ||
-    //   (sessionAttributes.lastAction === 'SearchAvailableDeliveryAddressIntent' && pendingData.kind === 'confirmDefaultAddress') ||
-    //   // after setting address, ask whether to check promotions
-    //   pendingData.kind === 'confirmCheckPromotions' ||
-    //   // payment-related pending kinds
-    //   pendingData.kind === 'confirmUseWaon' ||
-    //   pendingData.kind === 'confirmShareholderCard' ||
-    //   pendingData.kind === 'confirmFinalizePayment'
-    // ));
     return Boolean(sessionAttributes.pending && (
       pendingData.kind === 'clearCart' ||
       pendingData.kind === 'stopOrder' ||
       pendingData.kind === 'confirmDefaultAddress' ||
-      // after selecting a delivery slot, ask whether to choose address
+      // 配送枠選択後に住所を選ぶかどうかを問う
       pendingData.kind === 'confirmSelectAddressAfterSlot' ||
-      // after setting address, ask whether to check promotions
+      // 住所設定後にクーポン確認を行うかどうか
       pendingData.kind === 'confirmCheckPromotions' ||
-      // after selecting a promotion, ask whether to proceed to payment
+      // プロモーション適用後に支払いに進むか確認
       pendingData.kind === 'confirmProceedToPayment' ||
-      // payment-related pending kinds
+      // 支払い関連の確認種別
       pendingData.kind === 'confirmUseWaon' ||
       pendingData.kind === 'confirmShareholderCard' ||
       pendingData.kind === 'confirmFinalizePayment'

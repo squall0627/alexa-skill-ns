@@ -1,5 +1,5 @@
-// lambda/handlers/ViewCartIntentHandler.js
-// 日本語：カート内の商品を順番に読み上げるハンドラ
+// カート表示ハンドラ（ViewCartIntentHandler）
+// カート内の商品を順番に読み上げるハンドラ
 const Alexa = require('ask-sdk-core');
 
 module.exports = {
@@ -12,7 +12,7 @@ module.exports = {
     try {
       const attributesManager = handlerInput.attributesManager;
       const sessionAttributes = attributesManager.getSessionAttributes() || {};
-      // mark last action as this intent via helper
+      // ヘルパー経由でこのインテントを lastAction にマーク
       const { markLastAction } = require('../utils/sessionUtils');
       const { buildCartCard, attachSpeechAndCard } = require('../utils/responseUtils');
       markLastAction(handlerInput, 'ViewCartIntent');
@@ -25,7 +25,7 @@ module.exports = {
         return rb.reprompt('何を購入しますか？').getResponse();
       }
 
-      // 按照加入顺（cart 数组顺序）从头到尾读出信息，并计算合计
+      // 加入順（cart 配列の順序）に従って先頭から読み上げる
       let totalPrice = 0;
       const parts = cart.map((item, idx) => {
         const num = idx + 1;
@@ -38,7 +38,7 @@ module.exports = {
         const promoText = (item.promoPrice && item.promoPrice < item.price)
           ? `現在セール中、特別価格は<say-as interpret-as="cardinal">${item.promoPrice}</say-as>円です`
           : '';
-        // Wrap numeric pieces in say-as interpret-as="cardinal" so Alexa reads e.g. 100 as "百"
+        // 数値は say-as interpret-as="cardinal" でラップして Alexa の読み上げを安定させる
         return `番号<say-as interpret-as="cardinal">${num}</say-as>、${name}、<say-as interpret-as="cardinal">${qty}</say-as>個、単価は<say-as interpret-as="cardinal">${safeUnit}</say-as>円。${promoText}`.trim();
       });
 

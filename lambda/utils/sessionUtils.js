@@ -1,5 +1,5 @@
-// lambda/utils/sessionUtils.js
-// Small helper utilities for session attribute manipulation
+// セッションユーティリティ（sessionUtils）
+// セッション属性操作のための小さなユーティリティ
 
 function markLastAction(handlerInput, name) {
   if (!handlerInput || !handlerInput.attributesManager) return;
@@ -12,4 +12,3 @@ function markLastAction(handlerInput, name) {
 module.exports = {
   markLastAction,
 };
-

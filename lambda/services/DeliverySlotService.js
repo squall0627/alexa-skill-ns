@@ -2,7 +2,7 @@ let DateTime;
 try {
   DateTime = require('luxon').DateTime;
 } catch (e) {
-  // luxon not available (e.g., npm install was not run). Provide a minimal fallback.
+  // luxon が利用できない場合（例えば npm install が実行されていない等）、簡易フォールバックを提供します。
   DateTime = {
     now() { return new LocalDateTime(new Date()); },
     fromFormat(str, fmt) { return LocalDateTime.fromFormat(str); }
@@ -23,7 +23,7 @@ try {
     return `${y}-${m}-${d}`;
   };
   LocalDateTime.prototype.toFormat = function (fmt) {
-    // support 'M/d' and 'yyyy-LL-dd'
+    // 'M/d' と 'yyyy-LL-dd' をサポート
     if (fmt === 'M/d') {
       return `${this._date.getMonth() + 1}/${this._date.getDate()}`;
     }
@@ -38,7 +38,7 @@ try {
   LocalDateTime.prototype.toISO = function () { return this._date.toISOString(); };
 
   LocalDateTime.fromFormat = function (s) {
-    // parse formats like "yyyy-LL-dd'T'HH:mm" or "yyyyLLdd"
+    // "yyyy-LL-dd'T'HH:mm" や "yyyyLLdd" のような形式を解析します
     if (s.includes('T')) {
       const parts = s.split('T');
       return new LocalDateTime(new Date(parts[0]));
@@ -154,7 +154,7 @@ class DeliverySlotService {
   // 新規: SSML 用の日付表現（Alexa の say-as を活用）
   _formatSSMLDate(dateISO) {
     if (!dateISO) return '';
-    // use say-as interpret-as="date" with ymd — value as YYYY-MM-DD
+    // say-as interpret-as="date" を ymd フォーマット（YYYY-MM-DD）で使用します
     return `<say-as interpret-as="date" format="ymd">${dateISO}</say-as>`;
   }
 
@@ -164,7 +164,7 @@ class DeliverySlotService {
     const parts = String(timeRange).split('-');
     if (parts.length !== 2) return timeRange;
     const [start, end] = parts;
-    // Amazon supports say-as interpret-as="time" — provide the hh:mm
+    // Amazon の say-as interpret-as="time" を使うため、hh:mm を渡します
     return `<say-as interpret-as="time">${start}</say-as>から<say-as interpret-as="time">${end}</say-as>`;
   }
 
@@ -216,7 +216,7 @@ class DeliverySlotService {
     let parsedDate = this._parseDateInput(date);
     let parsedTime = this._parseTimeInput(time);
 
-    // time 参数可能に '明日の10時' のように date と time を含む場合の処理
+    // time パラメータが '明日の10時' のように日付と時刻を含む場合の処理
     if (time && typeof time === 'string') {
       const m = String(time).match(/^(?:([^\s]+)の)?\s*(.*)$/);
       if (m) {
@@ -224,7 +224,7 @@ class DeliverySlotService {
         const maybeTime = m[2];
         if (maybeDate) {
           const pd = this._parseDateInput(maybeDate);
-          if (pd) parsedDate = pd; // override
+          if (pd) parsedDate = pd; // 上書き
         }
         if (maybeTime) {
           const pt = this._parseTimeInput(maybeTime);
@@ -249,7 +249,7 @@ class DeliverySlotService {
       const plainTime = this._formatJapaneseTimeRangeLabel(s.timeRange) || s.timeRange;
       const feeText = s.fee === 0 ? '無料' : `${s.fee}円`;
       const spokenLabel = `${plainDate}、${plainTime}、配送費${feeText}`;
-      // SSML version; wrap with <speak> so handlers can send as SSML response
+      // SSML 版; ハンドラが SSML として送信できるように <speak> でラップ
       const spokenLabelSSML = `<speak>${this._formatSSMLDate(s.dateISO)}、${this._formatSSMLTimeRange(s.timeRange)}、配送費${s.fee === 0 ? '無料' : `<say-as interpret-as="number">${s.fee}</say-as>円`}</speak>`;
 
       return {

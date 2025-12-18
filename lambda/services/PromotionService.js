@@ -1,5 +1,5 @@
-// lambda/services/PromotionService.js
-// 日本語: 促進（クーポン）管理サービス
+// プロモーションサービス
+// 日本語: プロモーション（クーポン）管理サービス
 
 const TableHandler = require('../tables/TableHandler');
 const promotionsTable = new TableHandler('promotions');

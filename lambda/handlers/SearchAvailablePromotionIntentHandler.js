@@ -1,9 +1,9 @@
-// lambda/handlers/SearchAvailablePromotionIntentHandler.js
+// プロモーション検索ハンドラ（SearchAvailablePromotionIntentHandler）
 // 日本語：プロモーション（クーポン）を提示・適用する Intent ハンドラ（原 ApplyPromotionIntentHandler）
 
 const Alexa = require('ask-sdk-core');
 const CheckoutService = require('../services/CheckoutService');
-// PromotionService not used here
+// PromotionService はここでは使用しません
 
 module.exports = {
   canHandle(handlerInput) {
@@ -16,7 +16,7 @@ module.exports = {
       const attributesManager = handlerInput.attributesManager;
       const sessionAttributes = attributesManager.getSessionAttributes() || {};
       const { markLastAction } = require('../utils/sessionUtils');
-      // mark last action as this intent
+      // このインテントを最後のアクションとしてマーク
       markLastAction(handlerInput, 'SearchAvailablePromotionIntent');
 
       const cart = sessionAttributes.cart || [];
@@ -62,7 +62,7 @@ module.exports = {
       // 利用可能なプロモーションを列挙してユーザーに選択を促す
       const promos = calc.availablePromos;
 
-      // try to construct SSML using say-as for amounts
+      // SSML を構築するために金額に対して say-as を使う試み
       const ssmlItems = promos.map((p, i) => `<s>番号${i + 1}、${p.name}、<say-as interpret-as="cardinal">${p.amount}</say-as>円引き（条件<say-as interpret-as="cardinal">${p.orderThreshold}</say-as>円以上）</s>`).join('<break time="300ms"/>');
       const ssml = `<speak>利用可能なクーポンがあります：${ssmlItems}<break time="300ms"/>どのクーポンを利用しますか？ 番号で教えてください。</speak>`;
 

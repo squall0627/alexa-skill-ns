@@ -7,8 +7,8 @@ module.exports = {
     const request = handlerInput.requestEnvelope;
     const intentName = Alexa.getIntentName(request);
     const sessionAttributes = handlerInput.attributesManager.getSessionAttributes() || {};
-    // Mirror SelectDeliverySlotIntentHandler style: accept explicit SelectPaymentMethodIntent
-    // or NumberOnlyIntent when lastAction === 'StartPaymentIntent'
+    // SelectDeliverySlotIntentHandler のスタイルに合わせる: 明示的な SelectPaymentMethodIntent を受け付ける
+    // または lastAction === 'StartPaymentIntent' の場合に NumberOnlyIntent を受け付ける
     return (Alexa.getRequestType(request) === 'IntentRequest' && intentName === 'SelectPaymentMethodIntent' && sessionAttributes.lastAction === 'StartPaymentIntent');
   },
 
@@ -37,18 +37,17 @@ module.exports = {
       sessionAttributes.paymentFlow = sessionAttributes.paymentFlow || {};
       sessionAttributes.paymentFlow.method = selected.id;
       sessionAttributes.paymentFlow.status = 'methodSelected';
-      // mark dirty so payment method selection is persisted
+      // 決済方法の選択を永続化するためにダーティフラグを立てる
       sessionAttributes._cartDirty = true;
       sessionAttributes.lastAction = 'SelectPaymentMethodIntent';
       attributesManager.setSessionAttributes(sessionAttributes);
 
-      // If payment method supports WAON points question (assume aeon/waon integration for 'aeon')
-      // check balance first
+      // WAON ポイント利用確認をサポートする決済方法の場合（例: 'aeon'）、まず残高をチェック
       const balance = await PaymentService.getWaonBalance(attributesManager);
       if (balance > 0) {
           sessionAttributes.pending = true;
           sessionAttributes.pendingData = { kind: 'confirmUseWaon' };
-          // paymentFlow modified (pending next), keep dirty
+          // paymentFlow が変更された（次に pending）があるため、ダーティを維持
           sessionAttributes._cartDirty = true;
           attributesManager.setSessionAttributes(sessionAttributes);
           const speak = `WAONポイントの残高は${balance}ポイントあります。WAONポイントを利用しますか？ はい、またはいいえでお答えください。`;
@@ -58,7 +57,7 @@ module.exports = {
           return rb.reprompt('WAONポイントを利用しますか？').getResponse();
       }
 
-      // Otherwise ask about shareholder card next
+      // 次にオーナーズカード（株主優待カード）の確認を行う
       sessionAttributes.pending = true;
       sessionAttributes.pendingData = { kind: 'confirmShareholderCard' };
       sessionAttributes._cartDirty = true;

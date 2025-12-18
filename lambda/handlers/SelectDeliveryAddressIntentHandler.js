@@ -1,4 +1,4 @@
-// lambda/handlers/SelectDeliveryAddressIntentHandler.js
+// 届け先選択ハンドラ（SelectDeliveryAddressIntentHandler）
 const Alexa = require('ask-sdk-core')
 
 module.exports = {
@@ -21,7 +21,7 @@ module.exports = {
       const attributesManager = handlerInput.attributesManager;
       const sessionAttributes = attributesManager.getSessionAttributes() || {};
 
-      // Validate available addresses exist
+      // 利用可能な届け先が存在するか検証
       const available = sessionAttributes.availableDeliveryAddresses || [];
       if (!Array.isArray(available) || available.length === 0) {
         const speak = '申し訳ありません。先に届け先を検索してください。どの届け先にしますか？';
@@ -41,25 +41,25 @@ module.exports = {
       }
 
       const selected = available[idx - 1];
-      // Save selected address into session as cartDeliveryAddress
+      // セッションに選択した届け先を cartDeliveryAddress として保存
       sessionAttributes.cartDeliveryAddress = selected;
-      // Clear temporary list
+      // 一時的なリストを削除
       delete sessionAttributes.availableDeliveryAddresses;
       sessionAttributes._cartDirty = true;
-      // Ask whether to check available promotions next (set pending to be handled by PendingConfirmationHandler)
+      // 次にプロモーション確認をするかどうかを尋ねるために pending を設定（PendingConfirmationHandler で処理）
       sessionAttributes.pending = true;
       sessionAttributes.pendingData = { kind: 'confirmCheckPromotions', addressIndex: idx };
-      // persist updated session
+      // 更新したセッションを永続化
       attributesManager.setSessionAttributes(sessionAttributes);
 
       const speak = `届け先を選択しました。${selected.spokenLabel} を届け先として設定しました。利用可能なクーポンを確認しますか？ はいで確認します、いいえでお支払いに進みます。`;
       const reprompt = '利用可能なクーポンを確認しますか？ はい、またはいいえでお答えください。';
 
-      // Prefer SSML if service provided it, otherwise fallback to plain text
+      // サービスが SSML を提供していれば優先して使用し、なければプレーンテキストにフォールバック
       const ssmlBody = selected.spokenLabelSSML ? String(selected.spokenLabelSSML).replace(/^<speak>\s*/i, '').replace(/\s*<\/speak>$/i, '') : null;
       const fullSSML = ssmlBody ? `<speak>届け先を選択しました。${ssmlBody} を届け先として設定しました。利用可能なクーポンを確認しますか？ はいで確認します、いいえでお支払いに進みます。</speak>` : null;
 
-      // Attach Alexa card (nicely formatted) alongside the speech. Prefer SSML if available.
+      // Alexa カード（きれいにフォーマット）を発話に添付。SSML を優先。
       const { buildAddressCard, attachSpeechAndCard } = require('../utils/responseUtils');
       const card = buildAddressCard(selected);
       const speechToUse = fullSSML || speak;

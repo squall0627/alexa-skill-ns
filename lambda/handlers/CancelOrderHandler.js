@@ -1,6 +1,5 @@
-// lambda/handlers/CancelOrderHandler.js
-// DEPRECATED: This handler has been replaced by `StopOrderHandler.js`.
-// Keep a graceful response for backwards compatibility.
+// 注文キャンセルハンドラ（非推奨）
+// このハンドラは `StopOrderHandler.js` に置き換えられています。後方互換のために残しています。
 
 module.exports = {
   canHandle() {

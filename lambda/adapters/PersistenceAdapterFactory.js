@@ -1,6 +1,6 @@
 /**
  * PersistenceAdapterFactory.js
- * 根据环境动态选择持久化适配器
+ * 環境に応じて永続化アダプタを動的に選択します
  */
 
 const { DynamoDbPersistenceAdapter } = require('ask-sdk-dynamodb-persistence-adapter');
@@ -12,11 +12,11 @@ function getPersistenceAdapter() {
     
     console.log(`[PersistenceAdapterFactory] Environment: ${env}, IsLambda: ${isLambda}`);
     
-    // 优先级:
-    // 1. 如果指定了 NODE_ENV=production，使用 DynamoDB
-    // 2. 如果运行在 Lambda 环境且没有明确设置为 local，优先使用 DynamoDB
-    // 3. 否则使用本地适配器 (本地开发或 Lambda 模拟器)
-    
+    // 優先順位:
+    // 1. NODE_ENV=production が指定されていれば DynamoDB を使用
+    // 2. Lambda 環境でかつ明示的に local と設定されていない場合は DynamoDB を優先
+    // 3. それ以外（ローカル開発または Lambda シミュレータ）ではローカルアダプタを使用
+
     if (env === 'production') {
         console.log('[PersistenceAdapterFactory] Using DynamoDB adapter (production)');
         return new DynamoDbPersistenceAdapter({

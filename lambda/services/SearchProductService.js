@@ -1,4 +1,4 @@
-// services/SearchProductService.js
+// 商品検索サービス
 // 日本語: 商品検索サービス - 検索ロジックと仮の商品データベース
 
 const TableHandler = require('../tables/TableHandler');

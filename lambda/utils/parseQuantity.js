@@ -1,4 +1,4 @@
-// lambda/utils/parseQuantity.js
+// 数量パースユーティリティ（parseQuantity）
 // 日本語: ユーザーが話した数量を寛容に解析するユーティリティ
 
 function toHalfWidth(s) {
@@ -38,14 +38,14 @@ function parseSpokenQuantity(raw) {
   if (!raw || typeof raw !== 'string') return NaN;
   let s = raw.trim();
   s = s.replace(/\s+/g, '');
-  s = s.replace(/個|個|つ|こ|本|枚/g, ''); // remove common counters
+  s = s.replace(/個|個|つ|こ|本|枚/g, ''); // 一般的な助数詞を削除
   s = toHalfWidth(s);
 
-  // try digit extraction
+  // 数字の抽出を試みる
   const m = s.match(/(\d+)/);
   if (m) return parseInt(m[1], 10);
 
-  // try kanji
+  // 漢字の解析を試みる
   const kanjiParsed = parseKanjiNumber(s);
   if (!Number.isNaN(kanjiParsed)) return kanjiParsed;
 
@@ -55,4 +55,3 @@ function parseSpokenQuantity(raw) {
 module.exports = {
   parseSpokenQuantity,
 };
-

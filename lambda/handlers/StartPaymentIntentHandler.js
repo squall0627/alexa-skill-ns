@@ -1,5 +1,5 @@
-// lambda/handlers/StartPaymentIntentHandler.js
-// 支払いフローの開始ハンドラ
+// 支払い開始ハンドラ（StartPaymentIntentHandler）
+// 支払いフローの開始を処理するハンドラ
 const Alexa = require('ask-sdk-core');
 const PaymentService = require('../services/PaymentService');
 
@@ -18,7 +18,7 @@ module.exports = {
       const attributesManager = handlerInput.attributesManager;
       const sessionAttributes = attributesManager.getSessionAttributes() || {};
 
-      // Initialize paymentFlow in session
+      // セッション内のpaymentFlowを初期化
       sessionAttributes.paymentFlow = {
         status: 'started',
         method: null,
@@ -26,10 +26,10 @@ module.exports = {
         waonPoints: null,
         useShareholderCard: null
       };
-      // new paymentFlow initialized - mark dirty to persist
+      // 新しいpaymentFlowが初期化されました - 永続化のためにdirtyフラグを立てる
       sessionAttributes._cartDirty = true;
 
-      // lastAction used by NumberOnlyIntentHandler to route numeric replies
+      // NumberOnlyIntentHandlerによる数値応答のルーティングに使用されるlastAction
       sessionAttributes.lastAction = 'StartPaymentIntent';
       attributesManager.setSessionAttributes(sessionAttributes);
 

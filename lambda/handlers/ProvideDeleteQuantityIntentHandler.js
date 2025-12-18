@@ -1,12 +1,12 @@
-// lambda/handlers/ProvideDeleteQuantityIntentHandler.js
-// 日本語：ユーザーが削除数量を応答したときに pendingDelete を完成させるハンドラ
+// 削除個数提供ハンドラ（ProvideDeleteQuantityIntentHandler）
+// ユーザーが削除数量を応答したときに pendingDelete を完成させるハンドラ
 const Alexa = require('ask-sdk-core');
 
 module.exports = {
   canHandle(handlerInput) {
     const request = handlerInput.requestEnvelope;
     const sessionAttributes = handlerInput.attributesManager.getSessionAttributes() || {};
-    // Only handle when generic pending flag is set and lastAction was DeleteCartIntent
+    // DeleteQuantity を処理するのは、汎用の pending フラグが立っており、かつ lastAction が DeleteCartIntent の場合のみ
     if (!sessionAttributes.pending || sessionAttributes.lastAction !== 'DeleteCartIntent') {
       return false;
     }

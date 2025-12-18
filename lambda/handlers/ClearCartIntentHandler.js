@@ -1,5 +1,5 @@
-// lambda/handlers/ClearCartIntentHandler.js
-// 日本語：カートの中身だけをクリアするハンドラ（確認フロー対応）
+// カートクリアハンドラ（ClearCartIntentHandler）
+// カート内の商品を全てクリアする確認フローを提供するハンドラ
 const Alexa = require('ask-sdk-core');
 
 module.exports = {
@@ -14,10 +14,10 @@ module.exports = {
       const attributesManager = handlerInput.attributesManager;
       const sessionAttributes = attributesManager.getSessionAttributes() || {};
       const { markLastAction } = require('../utils/sessionUtils');
-      // mark last action as this intent
+      // このインテントを lastAction にマーク
       markLastAction(handlerInput, 'ClearCartIntent');
 
-      // Check built-in confirmation status (if interaction model uses confirmation)
+      // 確認ステータスをチェック（インタラクションモデルが確認を使用している場合）
       const intent = request.request.intent || {};
       const confirmationStatus = intent.confirmationStatus || 'NONE';
 

@@ -1,4 +1,6 @@
-// lambda/handlers/ConfirmOrderIntentHandler.js
+// 注文確定サマリハンドラ（ConfirmOrderIntentHandler）
+// 注文の最終確認（サマリー表示）を日本語で行うハンドラ
+
 const Alexa = require('ask-sdk-core');
 const PaymentService = require('../services/PaymentService');
 

@@ -9,15 +9,15 @@ const path = require('path');
 const { createAdapter } = require('../adapters/AIAdapter');
 const ConversationHistoryService = require('../services/ConversationHistoryService');
 
-// confidence threshold
+// 信頼度の閾値
 const CONFIDENCE_THRESHOLD = 0.6;
 
 function loadIntentDefinitions() {
   try {
-    // 首先尝试 lambda/.. 相对路径
+    // まず lambda/.. の相対パスを試す
     let imPath = path.join(__dirname, '..', 'skill-package', 'interactionModels', 'custom', 'ja-JP.json');
     if (!fs.existsSync(imPath)) {
-      // 退回到仓库根目录的 skill-package
+      // リポジトリルートの skill-package を試す
       imPath = path.join(__dirname, '..', '..', 'skill-package', 'interactionModels', 'custom', 'ja-JP.json');
     }
     if (!fs.existsSync(imPath)) return [];
@@ -34,10 +34,10 @@ function loadIntentDefinitions() {
 // キャッシュされたインテント定義（モジュールロード時に一度だけ読み込む）
 const CACHED_INTENTS = loadIntentDefinitions();
 
-// Build English prompt for AI: include recent conversation + intent list
+// AI に渡すプロンプトを構築（会話履歴 + インテント一覧を含む）
 function buildPrompt(conversationEntries, intents) {
-  // Put instruction in English per requirement
-  // 强化的提示：严格输出 JSON，仅返回指定字段；如果没有匹配则返回 intent:null 和 sample:null
+  // 指示文は英語で記述（仕様のため）
+  // 出力は JSON のみで、指定フィールド以外を含めないよう明確に指示する
   const header = `You are given a short conversation between a user and an Alexa shopping skill (in Japanese). Choose the best matching intent from the provided list of intents. REQUIRED: Output JSON ONLY, and NOTHING ELSE. The JSON must have these keys:
   - intent: the exact intent name from the provided list (string), or null if none matches.
   - sample: a single representative sample utterance in Japanese that the skill would accept for that intent (string), or null if intent is null.
@@ -45,26 +45,24 @@ function buildPrompt(conversationEntries, intents) {
   - slots: optional object mapping slotName -> value (strings), include only when you are confident.
 
   If there is no suitable intent, return {"intent": null, "sample": null, "confidence": 0}. Do NOT add any explanatory text, commentary, or additional keys. Respond with valid JSON only.`;
-  // Add explicit JSON examples to prompt to further constrain output format
+  // さらに出力形式の制約を強めるための JSON 例を追加
   const examples = `\n\nEXAMPLES:\n1) Matched intent example:\n{ "intent": "ViewCartIntent", "sample": "カートを見せて", "confidence": 0.95 }\n\n2) No-match example:\n{ "intent": null, "sample": null, "confidence": 0 }\n`;
 
-  // Include conversation: include latest up to 10 entries
+  // 会話履歴：最新 10 件を含める
   const recent = conversationEntries.slice(-10).map(e => `${e.role}: ${e.text}`).join('\n');
 
-  // Intent list lines
+  // インテント一覧行
   const intentLines = intents.map(it => `- ${it.name}: samples => ${Array.isArray(it.samples) ? it.samples.join(' | ') : ''}`).join('\n');
 
   const prompt = `${header}${examples}\nConversation:\n${recent}\n\nIntents:\n${intentLines}\n\nRespond with JSON.`;
-  // Optional debug: when DEBUG_AI env var is set, print the prompt
+  // デバッグ用：DEBUG_AI 環境変数が設定されていればプロンプトを出力
   if (process.env.DEBUG_AI) console.log('[AIFallbackHandler] AI prompt:\n', prompt);
   return prompt;
 }
 
 module.exports = {
   canHandle(handlerInput) {
-    // This handler acts as a last-resort fallback: it should run when an IntentRequest
-    // is received but none of the specific handlers matched. The Skill builder will
-    // call this handler if placed appropriately in the chain.
+    // このハンドラは最終手段として機能します: IntentRequest を受け、他のハンドラがマッチしなかった場合に実行される想定です。
     return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest';
   },
 
@@ -73,15 +71,15 @@ module.exports = {
     try {
       const attributesManager = handlerInput.attributesManager;
 
-      // Get conversation history
+      // 会話履歴を取得
       const history = await ConversationHistoryService.getHistory(attributesManager);
       const entries = history.entries || [];
 
-      // Use cached intent definitions
+      // キャッシュされたインテント定義を使用
       const intents = CACHED_INTENTS || [];
       const prompt = buildPrompt(entries, intents);
 
-      // Create AI Adapter and call
+      // AI アダプタを生成して呼び出す
       const adapter = createAdapter();
       let result = null;
       try {
@@ -92,34 +90,30 @@ module.exports = {
       }
 
       if (!result || !result.intent || result.confidence < CONFIDENCE_THRESHOLD) {
-        // 低信心 -> 引導ユーザーに再度聞き返す
+        // 信頼度が低い場合はユーザーに聞き返す
         const speak = '申し訳ありません。よく理解できませんでした。もう少し詳しく教えていただけますか？';
         const reprompt = '例えば「カートを見せて」と言ってください。';
         return handlerInput.responseBuilder.speak(speak).reprompt(reprompt).getResponse();
       }
 
-      // 高信心 -> 模擬的にインテントリクエストを発行する
+      // 信頼度が高ければ、模擬的にインテントを発行して該当ハンドラに委譲する
       const intentName = result.intent;
       const sampleUtterance = result.sample || '';
       const providedSlots = result.slots || null; // expect shape: { SlotName: 'value', ... }
 
-      // 保存：ユーザー说的原文也已由 RequestConversationInterceptor 保存；我们也把 AI 转换后的 sample 作为一条ユーザー意図记录
+      // 保存：ユーザーの元発話は RequestConversationInterceptor により保存済み；ここでは AI が返ったサンプルをユーザー発話として追加
       await ConversationHistoryService.appendEntry(attributesManager, 'USER', sampleUtterance);
 
-      // 构造一个フェイクの handlerInput を作成して、既存のハンドラに委譲する
-      // 最も簡単なのは、既存の dispatch を呼び出すことだが、ここでは Alexa.SkillBuilders の内部ルーティングを呼ぶのは難しいため
-      // 以下の方法：同一プロセス内で、そのインテント名に対応するハンドラモジュールを require して handle を呼ぶ。
-
-      // Try to require handler module by naming convention: map intentName -> handlers/<IntentName>Handler.js
+      // ハンドラーモジュールを require して handle を呼ぶ方法で委譲を試みる
       const handlerModulePath = path.join(__dirname, `${intentName}Handler.js`);
       if (fs.existsSync(handlerModulePath)) {
         try {
           const targetHandler = require(handlerModulePath);
-          // Build a fake request envelope representing the new intent invocation
+          // フェイクの handlerInput を作成して既存ハンドラに渡す
           const fakeHandlerInput = Object.assign({}, handlerInput, {
             requestEnvelope: JSON.parse(JSON.stringify(handlerInput.requestEnvelope))
           });
-          // Map providedSlots into Alexa slot format if present
+          // providedSlots を Alexa の slots フォーマットに変換
           const slotsObj = {};
           if (providedSlots && typeof providedSlots === 'object') {
             Object.keys(providedSlots).forEach(k => {
@@ -137,7 +131,7 @@ module.exports = {
             dialogState: 'COMPLETED'
           };
 
-          // Call the handler's handle
+          // ハンドラの handle を呼び出す
           if (targetHandler && typeof targetHandler.handle === 'function') {
             return await targetHandler.handle(fakeHandlerInput);
           }
@@ -146,7 +140,7 @@ module.exports = {
         }
       }
 
-      // If cannot require module, fallback to a generic response indicating delegation
+      // ハンドラモジュールに委譲できない場合は汎用レスポンスを返す
       const speak = `了解しました。${sampleUtterance} のご要望ですね。処理を試みます。`;
       return handlerInput.responseBuilder.speak(speak).getResponse();
 

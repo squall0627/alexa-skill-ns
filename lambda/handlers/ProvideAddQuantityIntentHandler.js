@@ -1,16 +1,16 @@
-// lambda/handlers/ProvideAddQuantityIntentHandler.js
-// 日本語：ユーザーが数量を応答したときに pendingAdd を完成させるハンドラ
+// 個数提供ハンドラ（ProvideAddQuantityIntentHandler）
+// ユーザーが数量を応答したときに pendingAdd を完成させるハンドラ
 const Alexa = require('ask-sdk-core');
 
 module.exports = {
   canHandle(handlerInput) {
     const request = handlerInput.requestEnvelope;
     const sessionAttributes = handlerInput.attributesManager.getSessionAttributes() || {};
-    // Only handle ProvideQuantity when a generic pending flag is set and the lastAction was AddCartIntent
+    // ProvideQuantity を処理するのは、汎用の pending フラグが立っており、かつ lastAction が AddCartIntent の場合のみ
     if (!sessionAttributes.pending || sessionAttributes.lastAction !== 'AddCartIntent') {
       return false;
     }
-    // also ensure the pendingData kind matches addQuantity
+    // pendingData の kind が addQuantity であることも確認
     const pendingData = sessionAttributes.pendingData || {};
     if (pendingData.kind !== 'addQuantity') return false;
     return Alexa.getRequestType(request) === 'IntentRequest' && Alexa.getIntentName(request) === 'ProvideAddQuantityIntent';

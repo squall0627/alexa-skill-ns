@@ -1,9 +1,7 @@
-// lambda/adapters/OpenAIAdapter.js
-// OpenAI 公式 npm を使うアダプター実装
-// 環境変数 OPENAI_API_KEY を優先使用。設定されていない場合は、
-// AWS Secrets Manager から指定のシークレット名（OPENAI_SECRET_NAME）で取得するオプションを提供します。
+// OpenAI アダプタ
+// OpenAI 公式クライアントを使って AI 呼び出しを行うアダプタ実装（コメントは日本語）
 
-// Try to load .env from lambda root so OPENAI_* env vars are available during local testing
+// ローカルテスト時に lambda ルートの .env を読み込んで OPENAI_* 環境変数を利用可能にする試み
 try {
   const path = require('path');
   const dotenvPath = path.join(__dirname, '..', '.env');
@@ -14,7 +12,7 @@ try {
       console.log('[OpenAIAdapter] env preview:', { OPENAI_MODEL: process.env.OPENAI_MODEL || null, OPENAI_API_KEY: process.env.OPENAI_API_KEY ? '***' : null });
     }
   } catch (e) {
-    // dotenv not installed or .env missing - ignore
+    // dotenv がインストールされていないか .env が存在しない場合は無視
   }
 } catch (e) {
   // ignore
@@ -67,14 +65,14 @@ function isModalitiesError(err) {
 }
 
 async function resolveApiKey(initialKey) {
-  // Priority:
-  // 1) explicit initialKey (constructor arg)
-  // 2) OPENAI_API_KEY environment variable
+  // 優先順位:
+  // 1) コンストラクタ引数として明示的に渡された初期キー
+  // 2) 環境変数 OPENAI_API_KEY
   // 3) SSM Parameter Store (OPENAI_SSM_PARAM_NAME / OPENAI_SSM_NAME / OPENAI_SSM_PARAMETER)
   // 4) Secrets Manager (OPENAI_SECRET_NAME)
   if (initialKey) return initialKey;
 
-  // 2) env var
+  // 2) 環境変数
   if (process.env.OPENAI_API_KEY) {
     if (process.env.DEBUG_AI) {
       console.log('[OpenAIAdapter] resolveApiKey: using OPENAI_API_KEY from env (masked)');
@@ -118,7 +116,7 @@ async function resolveApiKey(initialKey) {
     }
   }
 
-  // 4) Secrets Manager (existing behaviour)
+  // 4) Secrets Manager (既存の挙動)
   const secretName = process.env.OPENAI_SECRET_NAME;
   if (!secretName) return null;
   try {

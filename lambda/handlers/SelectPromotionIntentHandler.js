@@ -1,5 +1,5 @@
-// lambda/handlers/SelectPromotionIntentHandler.js
-// 日本語：ユーザーが番号でクーポンを選択して適用するハンドラ
+// クーポン選択ハンドラ（SelectPromotionIntentHandler）
+// ユーザーが番号でクーポンを選択して適用するハンドラ
 
 const Alexa = require('ask-sdk-core');
 
@@ -44,7 +44,7 @@ module.exports = {
 
       const selected = availablePromos[effectiveChoice - 1];
       sessionAttributes.appliedPromo = selected;
-      // mark cart/session as dirty so persistence layer saves the applied promo
+      // カート/セッションを更新したので永続化層で保存されるよう dirty フラグを立てる
       sessionAttributes._cartDirty = true;
       attributesManager.setSessionAttributes(sessionAttributes);
 
@@ -53,10 +53,6 @@ module.exports = {
       const deliveryFee = sessionAttributes.cartDelivery ? sessionAttributes.cartDelivery.fee || 0 : 0;
       const CheckoutService = require('../services/CheckoutService');
       const final = await CheckoutService.finalize(cart, deliveryFee, selected);
-
-      // const { markLastAction } = require('../utils/sessionUtils'];
-      // // mark last action as this intent
-      // markLastAction(handlerInput, 'SelectPromotionIntent');
 
       // After applying the promotion, ask whether to proceed to payment
       sessionAttributes.pending = true;

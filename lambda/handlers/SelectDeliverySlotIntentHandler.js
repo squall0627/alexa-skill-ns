@@ -1,5 +1,5 @@
-// lambda/handlers/SelectDeliverySlotIntentHandler.js
-// This is the renamed version of the former ChooseDeliverySlotIntentHandler, now named SelectDeliverySlotIntentHandler
+// 配送枠選択ハンドラ（SelectDeliverySlotIntentHandler）
+// 以前の ChooseDeliverySlotIntentHandler の改名版です
 const Alexa = require('ask-sdk-core');
 
 module.exports = {

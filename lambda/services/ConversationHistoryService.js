@@ -1,10 +1,10 @@
-// lambda/services/ConversationHistoryService.js
+// 会話履歴サービス
 // 会話履歴の簡易的な永続化サービス
-// 目的: ユーザーとAlexaのやり取りを順次記録して、AIフォールバックで利用できる形で保持する
+// 目的: ユーザーとAlexaのやり取りを順次記録して、人工知能フォールバックで利用できる形で保持する
 // すべてのユーザー可視メッセージ（発話）は日本語で保存する。コメントも日本語。
 
 const MAX_ENTRIES = 20; // 保持する最大発話数
-const MAX_TOTAL_CHARS = 8000; // JSON 長さの上限（概算）
+const MAX_TOTAL_CHARS = 8000; // JSON 文字列の長さの上限（概算）
 
 /**
  * attributesManager: handlerInput.attributesManager
@@ -26,7 +26,7 @@ async function appendEntry(attributesManager, role, text) {
       history.entries = history.entries.slice(-MAX_ENTRIES);
     }
 
-    // 合計文字数（JSON）での上限を守る
+    // 合計文字数（JSON 文字列）での上限を守る
     let approxLen = JSON.stringify(history.entries).length;
     while (approxLen > MAX_TOTAL_CHARS && history.entries.length > 1) {
       history.entries.shift();
@@ -69,4 +69,3 @@ module.exports = {
   getHistory,
   clearHistory
 };
-

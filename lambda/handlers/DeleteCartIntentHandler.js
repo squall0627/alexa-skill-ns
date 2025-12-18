@@ -1,5 +1,5 @@
-// lambda/handlers/DeleteCartIntentHandler.js
-// 日本語：削除 Intent - カートから商品を削除または数量を減らす
+// カート削除ハンドラ（DeleteCartIntentHandler）
+// 日本語：カートから商品を削除または数量を減らすハンドラ
 const Alexa = require('ask-sdk-core');
 
 module.exports = {
@@ -17,7 +17,7 @@ module.exports = {
       const attributesManager = handlerInput.attributesManager;
       const sessionAttributes = attributesManager.getSessionAttributes() || {};
       const { markLastAction } = require('../utils/sessionUtils');
-      // mark last action as this intent
+      // このインテントを lastAction にマーク
       markLastAction(handlerInput, 'DeleteCartIntent');
 
       const cart = sessionAttributes.cart || [];
@@ -49,15 +49,15 @@ module.exports = {
       const rawQty = (slots.Quantity && (slots.Quantity.value || (slots.Quantity.resolutions && slots.Quantity.resolutions.resolutionsPerAuthority && slots.Quantity.resolutions.resolutionsPerAuthority[0] && slots.Quantity.resolutions.resolutionsPerAuthority[0].values && slots.Quantity.resolutions.resolutionsPerAuthority[0].values[0] && slots.Quantity.resolutions.resolutionsPerAuthority[0].values[0].value && slots.Quantity.resolutions.resolutionsPerAuthority[0].values[0].value.name))) || (slots.Quantity && slots.Quantity.value);
       let quantity = parseQuantity(rawQty);
 
-      // 支持用户用 “全部” 表示删除整项
+      // 「全部」で整項削除をサポート
       const rawText = (rawQty || '').toString();
       if (/全部|全部削除|ぜんぶ|ぜんぶ削除/.test(rawText)) {
-        quantity = null; // 删除整项标志
+        quantity = null; // 整項削除の指定
       }
 
-      // 如果未提供数量，则询问用户要删除多少
+      // 数量が未提供の場合はユーザーに問い合わせる
       if (Number.isNaN(quantity)) {
-        // 保存通用 pending 标志与数据，lastAction 为当前 Intent 名称（DeleteCartIntent）
+        // 汎用の pending フラグを設定し、lastAction を現在のインテント名（DeleteCartIntent）にする
         sessionAttributes.pending = true;
         sessionAttributes.pendingData = { kind: 'deleteQuantity', index, productId: product.id };
         attributesManager.setSessionAttributes(sessionAttributes);
@@ -69,7 +69,7 @@ module.exports = {
         return rb.reprompt(reprompt).getResponse();
       }
 
-      // 有数量，执行删除或减少
+      // 数量がある場合、削除または減少を実行
       const cartUtils = require('../utils/cartUtils');
       const { cart: newCart, remainingQuantity, removedCompletely } = cartUtils.removeOrReduceCartItem(cart, product.id, quantity);
       sessionAttributes.cart = newCart;

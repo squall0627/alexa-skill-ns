@@ -1,6 +1,5 @@
-// lambda/handlers/NumberOnlyIntentHandler.js
-// Captures utterances that are only a number and routes them to the correct handler
-// based on sessionAttributes.lastAction and pendingData.
+// 数字のみインテントハンドラ（NumberOnlyIntentHandler）
+// 数字だけの発話をキャプチャして、sessionAttributes.lastAction や pendingData に基づいて適切なハンドラにルーティングします。
 const Alexa = require('ask-sdk-core');
 
 const ProvideAddQuantityIntentHandler = require('./ProvideAddQuantityIntentHandler');
@@ -18,15 +17,15 @@ module.exports = {
     const intentName = Alexa.getIntentName(request);
     const sessionAttributes = handlerInput.attributesManager.getSessionAttributes() || {};
 
-    // Only handle when user uttered NumberOnlyIntent
+    // 数字のみ発話で NumberOnlyIntent のときのみ処理
     if (!(Alexa.getRequestType(request) === 'IntentRequest' && intentName === 'NumberOnlyIntent')) {
       return false;
     }
 
-    // We only want to intercept pure-number replies when there is context (lastAction)
+    // lastAction がない場合は介入しない
     if (!sessionAttributes.lastAction) return false;
 
-    // Accept if lastAction is one of the follow-up actions we support
+    // サポートするフォローアップの lastAction の一覧
     const followUps = [
       'SearchProductIntent',
       'AddCartIntent',
@@ -60,14 +59,14 @@ module.exports = {
 
       try {
         if (lastAction === 'SearchProductIntent') {
-          // User just saw search results and said a number: treat as selecting an item number
+          // ユーザーが検索結果を見た後に番号を答えた場合は商品選択とみなす
           cloneRequestEnvelope.request.intent.name = 'AddCartIntent';
           cloneRequestEnvelope.request.intent.slots = { ItemNumber: { name: 'ItemNumber', value: numberValue } };
           const fakeHandlerInput = Object.assign({}, handlerInput, { requestEnvelope: cloneRequestEnvelope });
           return await AddCartIntentHandler.handle(fakeHandlerInput);
         }
         if (lastAction === 'AddCartIntent') {
-          // Route to ProvideAddQuantityIntentHandler: map Number -> Quantity
+          // ProvideAddQuantityIntentHandler にルーティング: Number -> Quantity
           cloneRequestEnvelope.request.intent.name = 'ProvideAddQuantityIntent';
           cloneRequestEnvelope.request.intent.slots = { Quantity: { name: 'Quantity', value: numberValue } };
           const fakeHandlerInput = Object.assign({}, handlerInput, { requestEnvelope: cloneRequestEnvelope });
@@ -75,7 +74,7 @@ module.exports = {
         }
 
         if (lastAction === 'DeleteCartIntent') {
-          // Route to ProvideDeleteQuantityIntentHandler: map Number -> Quantity
+          // ProvideDeleteQuantityIntentHandler にルーティング: Number -> Quantity
           cloneRequestEnvelope.request.intent.name = 'ProvideDeleteQuantityIntent';
           cloneRequestEnvelope.request.intent.slots = { Quantity: { name: 'Quantity', value: numberValue } };
           const fakeHandlerInput = Object.assign({}, handlerInput, { requestEnvelope: cloneRequestEnvelope });
@@ -83,7 +82,7 @@ module.exports = {
         }
 
         if (lastAction === 'SearchAvailableDeliverySlotIntent') {
-          // Route to SelectDeliverySlotIntentHandler: map Number -> SlotNumber
+          // SelectDeliverySlotIntentHandler にルーティング: Number -> SlotNumber
           cloneRequestEnvelope.request.intent.name = 'SelectDeliverySlotIntent';
           cloneRequestEnvelope.request.intent.slots = { SlotNumber: { name: 'SlotNumber', value: numberValue } };
           const fakeHandlerInput = Object.assign({}, handlerInput, { requestEnvelope: cloneRequestEnvelope });
@@ -91,7 +90,7 @@ module.exports = {
         }
 
         if (lastAction === 'SearchAvailablePromotionIntent') {
-          // Route to SelectPromotionIntentHandler: map Number -> PromoNumber
+          // SelectPromotionIntentHandler にルーティング: Number -> PromoNumber
           cloneRequestEnvelope.request.intent.name = 'SelectPromotionIntent';
           cloneRequestEnvelope.request.intent.slots = { PromoNumber: { name: 'PromoNumber', value: numberValue } };
           const fakeHandlerInput = Object.assign({}, handlerInput, { requestEnvelope: cloneRequestEnvelope });
@@ -99,7 +98,7 @@ module.exports = {
         }
 
         if (lastAction === 'SearchAvailableDeliveryAddressIntent') {
-          // Route to SelectDeliveryAddressIntentHandler: map Number -> AddressNumber
+          // SelectDeliveryAddressIntentHandler にルーティング: Number -> AddressNumber
           cloneRequestEnvelope.request.intent.name = 'SelectDeliveryAddressIntent';
           cloneRequestEnvelope.request.intent.slots = { AddressNumber: { name: 'AddressNumber', value: numberValue } };
           const fakeHandlerInput = Object.assign({}, handlerInput, { requestEnvelope: cloneRequestEnvelope });
